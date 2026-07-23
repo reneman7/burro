@@ -19,6 +19,7 @@ const initialState = {
   manoResult: null,
   partidaResult: null,
   paused: null,
+  serverError: null,
 };
 
 /**
@@ -74,6 +75,7 @@ export function useGameSocket(tableId) {
     const onPartidaFinished = (result) => setState((prev) => ({ ...prev, partidaResult: result }));
     const onPaused = (info) => setState((prev) => ({ ...prev, paused: info }));
     const onRenounced = () => setMyTurn(null);
+    const onServerError = (info) => setState((prev) => ({ ...prev, serverError: info.message }));
 
     socket.on('game:state', onState);
     socket.on('game:manoStarted', onManoStarted);
@@ -85,6 +87,7 @@ export function useGameSocket(tableId) {
     socket.on('game:partidaFinished', onPartidaFinished);
     socket.on('game:paused', onPaused);
     socket.on('game:renounced', onRenounced);
+    socket.on('game:error', onServerError);
 
     return () => {
       socket.emit('game:unwatch', tableId);
@@ -98,6 +101,7 @@ export function useGameSocket(tableId) {
       socket.off('game:partidaFinished', onPartidaFinished);
       socket.off('game:paused', onPaused);
       socket.off('game:renounced', onRenounced);
+      socket.off('game:error', onServerError);
     };
   }, [socket, connected, tableId]);
 

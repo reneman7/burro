@@ -68,6 +68,17 @@ export class GameRoom {
   _sendFullStateTo(userId) {
     if (!this.mano) return;
     const pub = this.mano.getPublicState();
+    // Reconstruye lo que game:manoStarted habría mandado, por si este socket
+    // se conecta/reconecta después del broadcast original (se había perdido
+    // manoNumber/fondo en la reconexión, dejando el encabezado mostrando "-").
+    this.sendPrivate(userId, 'game:manoStarted', {
+      manoNumber: this.manoNumber,
+      isMandatory: pub.isMandatory,
+      dealerId: pub.dealerId,
+      trumpCard: pub.trumpCard,
+      seatOrder: pub.seatOrder,
+      fondo: this.partida?.fondo,
+    });
     this.sendPrivate(userId, 'game:state', pub);
     if (this.mano.hands[userId]) {
       this.sendPrivate(userId, 'game:yourHand', { hand: this.mano.hands[userId] });
@@ -291,6 +302,12 @@ export class GameRoom {
     setTimeout(() => {
       this._dealNextMano().catch((err) => {
         console.error(`Error repartiendo la siguiente mano de la mesa ${this.tableId}:`, err);
+        // Que quede claro para todos que algo falló, en vez de dejarlos
+        // esperando en silencio para siempre (p. ej. un hipo de red entre
+        // el servicio de Node y el hosting de PHP).
+        this.broadcastPublic('game:error', {
+          message: 'No se pudo repartir la siguiente mano. Recarga la página; si persiste, avisa al administrador.',
+        });
       });
     }, NEXT_MANO_DELAY_MS + MANO_RESULT_BROADCAST_DELAY_MS);
   }

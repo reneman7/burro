@@ -60,7 +60,8 @@ export default function GameTable({ table, currentUserId }) {
     <div className="game-table">
       <div className="game-header">
         <div>
-          Mano {game.manoNumber ?? '-'} {game.isMandatory ? '(obligatoria)' : '(optativa)'}
+          Mano {game.manoNumber ?? '-'}{' '}
+          {game.isMandatory === null ? '' : game.isMandatory ? '(obligatoria)' : '(optativa)'}
         </div>
         {game.trumpCard && (
           <div className="trump-indicator">
@@ -68,7 +69,14 @@ export default function GameTable({ table, currentUserId }) {
           </div>
         )}
         {typeof game.fondo === 'number' && <div>Fondo acumulado: {game.fondo}</div>}
+        {!game.connected && <div className="achico-tag">Conectando en vivo...</div>}
       </div>
+
+      {game.serverError && (
+        <div className="banner banner-warning">
+          <p>{game.serverError}</p>
+        </div>
+      )}
 
       {game.paused && (
         <div className="banner banner-warning">
