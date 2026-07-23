@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# Todo el repositorio vive dentro de htdocs por comodidad de desarrollo con
+# XAMPP, pero Apache solo debe exponer la API PHP (backend-php/public).
+# Todo lo demás (código fuente, .env, composer/package.json, vendor,
+# node_modules, sql) queda bloqueado por defecto.
+#
+# Nota: si se despliega a un hosting donde el document root ya apunte
+# directamente a backend-php/public, este archivo deja de ser necesario.
+RewriteCond %{REQUEST_URI} !^/burro/backend-php/public/
+RewriteRule ^ - [F,L]

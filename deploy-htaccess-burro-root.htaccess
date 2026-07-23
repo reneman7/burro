@@ -1,0 +1,15 @@
+Options +FollowSymLinks -MultiViews
+RewriteEngine On
+
+# Solo backend-php/public es accesible; el resto de backend-php (src, vendor,
+# composer.json, config.local.php) queda bloqueado.
+RewriteCond %{REQUEST_URI} ^/backend-php/
+RewriteCond %{REQUEST_URI} !^/backend-php/public/
+RewriteRule ^ - [F,L]
+
+# SPA de React: cualquier ruta que no sea un archivo/carpeta real y no sea la
+# API, sirve index.html para que React Router maneje la navegación.
+RewriteCond %{REQUEST_URI} !^/backend-php/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]

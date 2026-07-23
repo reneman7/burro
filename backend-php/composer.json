@@ -1,0 +1,14 @@
+{
+    "name": "burro/backend-php",
+    "description": "API REST y panel admin para el juego Burro",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "firebase/php-jwt": "^7.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Burro\\": "src/"
+        }
+    }
+}

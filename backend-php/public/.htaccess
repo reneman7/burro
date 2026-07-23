@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Nota: ya no reenviamos el header Authorization — la API usa X-Auth-Token en
+# su lugar (algunos hostings compartidos descartan Authorization antes de que
+# llegue a PHP; los headers X- personalizados sí pasan bien en todos lados).
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

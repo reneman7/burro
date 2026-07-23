@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+.env.production.local
+frontend/dist/
+backend-php/vendor/
+backend-php/config.local.php
+*.log
+.claude/

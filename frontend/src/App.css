@@ -1,0 +1,331 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 320px;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.auth-form input {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.auth-form .error {
+  color: #e5484d;
+  font-size: 0.9rem;
+}
+
+.lobby-page header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.lobby-page header > div {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lobby-page main {
+  padding: 2rem;
+}
+
+.lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.panel input {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.panel .error {
+  color: #e5484d;
+  font-size: 0.9rem;
+}
+
+.table-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.4rem 0;
+}
+
+.mesa-page {
+  padding: 2rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.mesa-page header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.seat-list {
+  padding-left: 1.5rem;
+}
+
+/* ---- Cartas ---- */
+
+.card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 78px;
+  border-radius: 6px;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  background: var(--card-bg, #fff);
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.1;
+  cursor: default;
+  padding: 0;
+}
+
+.card-small {
+  width: 36px;
+  height: 50px;
+  font-size: 0.85rem;
+}
+
+.card-red {
+  color: #c0392b;
+}
+
+.card-black {
+  color: #1c1c1c;
+}
+
+.card-back {
+  background: repeating-linear-gradient(45deg, #345, #345 4px, #234 4px, #234 8px);
+  border: 1px solid rgba(128, 128, 128, 0.5);
+}
+
+.card-selectable {
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.card-selectable:hover {
+  transform: translateY(-4px);
+}
+
+.card-selected {
+  outline: 3px solid #2b8aef;
+  transform: translateY(-6px);
+}
+
+.card-disabled {
+  opacity: 0.55;
+}
+
+/* ---- Mesa de juego ---- */
+
+.game-table {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.game-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+  font-weight: 600;
+}
+
+.trump-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.seats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.seat {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.seat-active {
+  border-color: #2b8aef;
+  box-shadow: 0 0 0 2px rgba(43, 138, 239, 0.3);
+}
+
+.seat-eliminated {
+  opacity: 0.5;
+}
+
+.seat-name {
+  font-weight: 600;
+}
+
+.seat-tag {
+  font-size: 0.8rem;
+  color: #e5484d;
+}
+
+.turn-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.turn-timer-urgent {
+  color: #e5484d;
+}
+
+.trick-area {
+  min-height: 100px;
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(128, 128, 128, 0.4);
+}
+
+.trick-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.trick-play-winner {
+  outline: 2px solid #2ecc71;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.achico-tag {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #e08e0b;
+}
+
+.my-hand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hand-cards {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.banner {
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.banner-warning {
+  border-color: #e08e0b;
+}
+
+.banner-result {
+  border-color: #2ecc71;
+}
+
+.banner-final {
+  border-color: #2b8aef;
+}
+
+.hint {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.tx-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tx-table th,
+.tx-table td {
+  text-align: left;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+  font-size: 0.9rem;
+}
+
+.tx-positive {
+  color: #2ecc71;
+}
+
+.tx-negative {
+  color: #e5484d;
+}
