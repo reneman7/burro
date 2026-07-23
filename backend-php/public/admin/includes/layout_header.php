@@ -37,7 +37,7 @@
     <a href="settings.php">Configuración</a>
   </div>
   <div>
-    <?= h(admin_current_user()['username']) ?> · <a href="logout.php">Salir</a>
+    <?= h(admin_current_user()['username']) ?> · <a href="account.php">Mi cuenta</a> · <a href="logout.php">Salir</a>
   </div>
 </header>
 <?php endif; ?>
