@@ -108,11 +108,28 @@ export class ManoRuntime extends EventEmitter {
       for (const id of this.nonEntrants) {
         this.shoe = collectManoCards(this.shoe, this.allHands[id]);
       }
+      if (this.entrants.length === 1) {
+        // Con un solo entrante no hay nadie contra quién competir: ni el
+        // intercambio ni las bazas cambian un resultado ya decidido, así que
+        // se salta directo a ganar la mano en vez de hacerlo jugar de todas
+        // formas.
+        this._winAsSoleEntrant();
+        return;
+      }
       this._beginExchangePhase();
     } else {
       this._armTimer(() => this._onEntryTimeout());
       this.emit('stateChanged');
     }
+  }
+
+  /** Se salva automático (5 de 5), sin pasar por intercambio ni bazas. */
+  _winAsSoleEntrant() {
+    const soleEntrantId = this.entrants[0];
+    this.hands[soleEntrantId] = this.allHands[soleEntrantId];
+    this.phase = 'playing';
+    this.points = { [soleEntrantId]: 5 };
+    this._finishMano();
   }
 
   // ------------------------------------------------------------------
