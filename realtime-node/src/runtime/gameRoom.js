@@ -171,7 +171,13 @@ export class GameRoom {
 
     this._wireManoEvents();
 
-    this.mano.start();
+    // OJO: game:manoStarted y game:yourHand deben salir ANTES de mano.start().
+    // start() dispara 'stateChanged' de forma síncrona (fase 'entry' en manos
+    // optativas), y ese listener ya está conectado por _wireManoEvents(), así
+    // que si start() se llama primero, el cliente recibe game:state (con la
+    // pregunta de si quiere entrar) antes que sus propias cartas — se veía
+    // como si primero preguntara y después repartiera, al revés de lo
+    // esperado.
     this.broadcastPublic('game:manoStarted', {
       manoNumber,
       isMandatory,
@@ -185,6 +191,7 @@ export class GameRoom {
         this.sendPrivate(userId, 'game:yourHand', { hand: this.mano.allHands[userId] });
       }
     }
+    this.mano.start();
     this._broadcastState();
   }
 
@@ -285,9 +292,12 @@ export class GameRoom {
         saved: result.payments.saved,
         fondo: result.payments.newFondo,
       });
+      const savedCount = result.payments.saved.length;
+      const payoutPerWinner = savedCount > 0 ? Math.floor(result.payments.newFondo / savedCount) : 0;
       this.broadcastPublic('game:partidaFinished', {
         saved: result.payments.saved,
         fondoRepartido: result.payments.newFondo,
+        payoutPerWinner,
       });
       this.partida = null;
 

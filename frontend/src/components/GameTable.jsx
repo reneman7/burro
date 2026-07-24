@@ -22,6 +22,7 @@ export default function GameTable({ table, currentUserId }) {
 
   const isMyTurn = game.turnUserId === currentUserId;
   const iAmEntrant = game.entrants.includes(currentUserId);
+  const winningCard = game.trickPlays.find((p) => p.userId === game.lastTrickWinner)?.card;
 
   function toggleDiscard(index) {
     setSelectedToDiscard((prev) => {
@@ -125,7 +126,15 @@ export default function GameTable({ table, currentUserId }) {
       </div>
 
       {game.lastTrickWinner && (
-        <p className="trick-winner-banner">🏆 {usernameOf(game.lastTrickWinner)} ganó esta baza</p>
+        <p className="trick-winner-banner">
+          🏆 {usernameOf(game.lastTrickWinner)} ganó esta baza
+          {winningCard && (
+            <>
+              {' '}
+              con <Card card={winningCard} small />
+            </>
+          )}
+        </p>
       )}
       <div className="trick-area">
         {game.trickPlays.length === 0 && game.phase === 'playing' && <p>Esperando la primera carta de la baza...</p>}
@@ -165,10 +174,11 @@ export default function GameTable({ table, currentUserId }) {
           <h3>Tu mano</h3>
           <div className="hand-cards">
             {game.myHand.map((card, i) => {
+              const cardKey = `${card.rank}${card.suit}`;
               if (game.phase === 'exchange' && isMyTurn) {
                 return (
                   <Card
-                    key={i}
+                    key={cardKey}
                     card={card}
                     selectable
                     selected={selectedToDiscard.includes(i)}
@@ -178,10 +188,15 @@ export default function GameTable({ table, currentUserId }) {
               }
               if (game.phase === 'playing' && isMyTurn) {
                 return (
-                  <Card key={i} card={card} selectable={game.myTurn?.validIndexes.includes(i)} onClick={() => playCard(i)} />
+                  <Card
+                    key={cardKey}
+                    card={card}
+                    selectable={game.myTurn?.validIndexes.includes(i)}
+                    onClick={() => playCard(i)}
+                  />
                 );
               }
-              return <Card key={i} card={card} selectable={false} />;
+              return <Card key={cardKey} card={card} selectable={false} />;
             })}
           </div>
 
@@ -216,8 +231,14 @@ export default function GameTable({ table, currentUserId }) {
       {game.manoResult && (
         <div className="banner banner-result">
           <h3>Resultado de la mano {game.manoResult.manoNumber}</h3>
-          <p>Se salvaron: {game.manoResult.saved.map(usernameOf).join(', ') || 'nadie'}</p>
-          <p>No se salvaron: {game.manoResult.notSaved.map(usernameOf).join(', ') || 'nadie'}</p>
+          <p>
+            Se salvaron: {game.manoResult.saved.map(usernameOf).join(', ') || 'nadie'}
+            {game.manoResult.payoutPerWinner > 0 && ` (cada uno recibió ${game.manoResult.payoutPerWinner})`}
+          </p>
+          <p>
+            No se salvaron: {game.manoResult.notSaved.map(usernameOf).join(', ') || 'nadie'}
+            {game.manoResult.paymentPerLoser > 0 && ` (cada uno pagó ${game.manoResult.paymentPerLoser})`}
+          </p>
           {game.manoResult.eliminated.length > 0 && (
             <p>Renunciaron: {game.manoResult.eliminated.map(usernameOf).join(', ')}</p>
           )}
@@ -231,6 +252,9 @@ export default function GameTable({ table, currentUserId }) {
           <h3>¡Partida terminada!</h3>
           <p>Se repartió el fondo entre: {game.partidaResult.saved.map(usernameOf).join(', ')}</p>
           <p>Fondo repartido: {game.partidaResult.fondoRepartido}</p>
+          {game.partidaResult.payoutPerWinner > 0 && (
+            <p>Cada uno recibió: {game.partidaResult.payoutPerWinner}</p>
+          )}
           <p>Vuelve a la sala de espera para definir la apuesta y comenzar una nueva partida.</p>
         </div>
       )}

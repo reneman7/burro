@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSocket } from './useSocket';
 
 const initialState = {
@@ -35,6 +35,11 @@ export function useGameSocket(tableId) {
   const [myTurn, setMyTurn] = useState(null); // { validIndexes, isAchico }
   const [trickPlays, setTrickPlays] = useState([]);
   const [lastTrickWinner, setLastTrickWinner] = useState(null);
+  // Mientras está "congelada" se sigue mostrando la última baza completa (con
+  // quién y con qué carta ganó) hasta que de verdad empiece la siguiente
+  // (llegue la primera carta jugada de esa nueva baza). Un ref porque los
+  // callbacks del socket la leen fuera del ciclo de render de React.
+  const frozenRef = useRef(false);
 
   useEffect(() => {
     if (!socket || !connected || !tableId) return undefined;
@@ -44,14 +49,21 @@ export function useGameSocket(tableId) {
     const onState = (s) => {
       setState((prev) => ({ ...prev, ...s }));
       if (s.phase === 'playing' && s.currentTrick) {
-        setTrickPlays(s.currentTrick.plays);
+        // Mientras está congelada mostrando la baza recién terminada, un
+        // game:state de fondo (el servidor ya armó la próxima baza vacía
+        // internamente) no debe borrar lo que se está mostrando.
+        if (!frozenRef.current) {
+          setTrickPlays(s.currentTrick.plays);
+        }
       } else if (s.phase !== 'playing') {
+        frozenRef.current = false;
         setTrickPlays([]);
       }
     };
 
     const onManoStarted = (payload) => {
       setState((prev) => ({ ...prev, ...payload, manoResult: null, paused: null }));
+      frozenRef.current = false;
       setTrickPlays([]);
       setLastTrickWinner(null);
       setMyTurn(null);
@@ -59,19 +71,22 @@ export function useGameSocket(tableId) {
 
     const onYourHand = ({ hand }) => setMyHand(hand);
     const onYourTurn = ({ validIndexes, isAchico }) => setMyTurn({ validIndexes, isAchico });
-    const onCardPlayed = (play) => setTrickPlays((prev) => [...prev, play]);
+    const onCardPlayed = (play) => {
+      if (frozenRef.current) {
+        // Esta es la primera carta de la baza nueva: recién ahora se limpia
+        // la anterior, que se mantuvo visible todo el tiempo que hizo falta.
+        frozenRef.current = false;
+        setTrickPlays([play]);
+        setLastTrickWinner(null);
+      } else {
+        setTrickPlays((prev) => [...prev, play]);
+      }
+    };
 
     const onTrickFinished = (result) => {
       setMyTurn(null);
       setLastTrickWinner(result.winnerId);
-      // Deja ver la baza completa y quién la ganó unos segundos antes de
-      // limpiar; si de todas formas se pierde este timer (p. ej. por un
-      // corte de conexión momentáneo), el próximo game:state que llegue ya
-      // corrige trickPlays al valor real, así que nunca se queda "pegado".
-      setTimeout(() => {
-        setTrickPlays([]);
-        setLastTrickWinner(null);
-      }, 3500);
+      frozenRef.current = true;
     };
 
     const onManoResult = (result) =>

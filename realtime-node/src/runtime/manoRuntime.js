@@ -223,6 +223,10 @@ export class ManoRuntime extends EventEmitter {
     this.hands[userId] = hand.filter((_, i) => i !== cardIndex);
     this.currentTrickPlays.push({ userId, card, isAchico });
     this.emit('cardPlayed', { userId, card, isAchico });
+    // Sin esto, la carta jugada nunca desaparecía de la mano del jugador en
+    // su propia pantalla (el estado interno sí se actualizaba, pero nadie
+    // avisaba al cliente).
+    this.emit('handUpdated', { userId, hand: this.hands[userId] });
 
     if (this.trickState.ledSuit === null) this.trickState.ledSuit = card.suit;
     if (card.suit === this.trumpCard.suit) {
