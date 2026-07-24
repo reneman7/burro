@@ -155,17 +155,15 @@ export default function GameTable({
                   <div className="mano-history-tricks">
                     {m.tricks.map((t) => (
                       <div key={t.trick_number} className="mano-history-trick">
-                        <span className="hint">B{t.trick_number}</span>
+                        <span className="hint mano-history-trick-label">B{t.trick_number}</span>
                         {t.plays.map((p) => (
-                          <span
+                          <div
                             key={p.user_id}
-                            className={`mano-history-play ${
-                              t.winner_user_id === p.user_id ? 'mano-history-play-winner' : ''
-                            }`}
-                            title={p.username}
+                            className={`trick-play ${t.winner_user_id === p.user_id ? 'trick-play-winner' : ''}`}
                           >
                             <Card card={p.card} small />
-                          </span>
+                            <span>{p.username}</span>
+                          </div>
                         ))}
                       </div>
                     ))}

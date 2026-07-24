@@ -461,7 +461,7 @@
 .mano-history-tricks {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
   margin-top: 0.4rem;
   padding-top: 0.4rem;
   border-top: 1px dashed rgba(128, 128, 128, 0.25);
@@ -470,21 +470,21 @@
 .mano-history-trick {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.5rem;
 }
 
-.mano-history-trick .hint {
+.mano-history-trick-label {
   min-width: 22px;
 }
 
-.mano-history-play .card {
-  width: 28px;
-  height: 40px;
-  font-size: 0.65rem;
+.mano-history-tricks .trick-play {
+  font-size: 0.75rem;
 }
 
-.mano-history-play-winner .card {
-  outline: 2px solid #2ecc71;
+.mano-history-tricks .trick-play .card {
+  width: 30px;
+  height: 42px;
+  font-size: 0.6rem;
 }
 
 .tx-table {
