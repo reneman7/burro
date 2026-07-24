@@ -29,6 +29,8 @@ export default function GameTable({
   const [topupAmount, setTopupAmount] = useState(20);
   const [topupError, setTopupError] = useState('');
   const [toppingUp, setToppingUp] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [manoHistory, setManoHistory] = useState([]);
 
   // El servidor marca la mesa como 'waiting' apenas termina la partida (para
   // poder arrancar otra), pero el resumen final se queda visible en pantalla
@@ -36,6 +38,19 @@ export default function GameTable({
   useEffect(() => {
     if (game.partidaResult) onPartidaFinished?.();
   }, [game.partidaResult, onPartidaFinished]);
+
+  // Se refresca cada vez que termina una mano, para que el historial ya
+  // tenga la última mano lista apenas se abra el panel.
+  useEffect(() => {
+    let active = true;
+    api
+      .getManoHistory(token, table.code)
+      .then((res) => active && setManoHistory(res.manos))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [token, table.code, game.manoResult]);
 
   const usernameOf = useMemo(() => {
     const map = Object.fromEntries(table.players.map((p) => [p.user_id, p.username]));
@@ -105,6 +120,37 @@ export default function GameTable({
         </div>
         {typeof game.fondo === 'number' && <div>Fondo acumulado: {formatMoney(game.fondo)}</div>}
         {!game.connected && <div className="achico-tag">Conectando en vivo...</div>}
+      </div>
+
+      <div className="mano-history">
+        <button type="button" className="link-button mano-history-toggle" onClick={() => setHistoryOpen((o) => !o)}>
+          {historyOpen ? '▲' : '▼'} Historial de manos
+        </button>
+        {historyOpen && (
+          <div className="mano-history-panel">
+            {manoHistory.length === 0 && <p className="hint">Todavía no hay manos jugadas en esta partida.</p>}
+            {manoHistory.map((m) => (
+              <div key={m.mano_number} className="mano-history-row">
+                <div className="mano-history-head">
+                  <span>Mano {m.mano_number}</span>
+                  <span className="hint">{m.is_mandatory ? 'obligatoria' : 'optativa'}</span>
+                </div>
+                <div className="mano-history-players">
+                  {m.players.map((p) => (
+                    <span
+                      key={p.user_id}
+                      className={`mano-history-chip ${
+                        p.renounced ? 'chip-danger' : p.saved ? 'chip-success' : ''
+                      }`}
+                    >
+                      {p.username} · {p.renounced ? 'renunció' : `${p.points} pts`}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {game.serverError && (

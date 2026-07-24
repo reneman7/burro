@@ -40,6 +40,7 @@ export const api = {
   joinTable: (token, { code, buyIn }) =>
     request('/tables/join', { method: 'POST', token, body: { code, buy_in: buyIn } }),
   getTable: (token, code) => request(`/tables/${code}`, { token }),
+  getManoHistory: (token, code) => request(`/tables/${code}/mano-history`, { token }),
   updateAnte: (token, code, anteValue) =>
     request(`/tables/${code}/ante`, { method: 'PUT', token, body: { ante_value: anteValue } }),
   startPartida: (token, code, mandatoryManos) =>

@@ -194,6 +194,63 @@ final class TableController
         Http::json($this->getTableState($db, (int) $table['id']));
     }
 
+    /** Últimas 10 manos de la partida activa de esta mesa, con el resultado de cada jugador. */
+    public function manoHistory(string $code): never
+    {
+        Http::requireAuth();
+        $db = Db::get();
+
+        $stmt = $db->prepare('SELECT id FROM tables_ WHERE code = ?');
+        $stmt->execute([strtoupper($code)]);
+        $table = $stmt->fetch();
+        if ($table === false) {
+            Http::error('No existe una mesa con ese código', 404);
+        }
+
+        $stmt = $db->prepare(
+            "SELECT m.id, m.mano_number, m.is_mandatory
+             FROM manos m
+             JOIN partidas p ON p.id = m.partida_id
+             WHERE p.table_id = ? AND p.status = 'active'
+             ORDER BY m.mano_number DESC
+             LIMIT 10"
+        );
+        $stmt->execute([$table['id']]);
+        $manos = $stmt->fetchAll();
+
+        if (count($manos) === 0) {
+            Http::json(['manos' => []]);
+        }
+
+        $manoIds = array_map(static fn ($m) => (int) $m['id'], $manos);
+        $placeholders = implode(',', array_fill(0, count($manoIds), '?'));
+        $stmt = $db->prepare(
+            "SELECT mp.mano_id, mp.user_id, u.username, mp.points, mp.saved, mp.renounced
+             FROM mano_players mp
+             JOIN users u ON u.id = mp.user_id
+             WHERE mp.mano_id IN ($placeholders)
+             ORDER BY mp.id ASC"
+        );
+        $stmt->execute($manoIds);
+
+        $playersByMano = [];
+        foreach ($stmt->fetchAll() as $p) {
+            $playersByMano[(int) $p['mano_id']][] = [
+                'user_id' => (int) $p['user_id'],
+                'username' => $p['username'],
+                'points' => (int) $p['points'],
+                'saved' => (bool) $p['saved'],
+                'renounced' => (bool) $p['renounced'],
+            ];
+        }
+
+        Http::json(['manos' => array_map(static fn ($m) => [
+            'mano_number' => (int) $m['mano_number'],
+            'is_mandatory' => (bool) $m['is_mandatory'],
+            'players' => $playersByMano[(int) $m['id']] ?? [],
+        ], $manos)]);
+    }
+
     public function list(): never
     {
         $claims = Http::requireAuth();

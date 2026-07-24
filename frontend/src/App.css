@@ -365,6 +365,59 @@
   opacity: 0.8;
 }
 
+.mano-history-toggle {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.mano-history-panel {
+  margin-top: 0.5rem;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.mano-history-row {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+}
+
+.mano-history-row:last-child {
+  border-bottom: none;
+}
+
+.mano-history-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+
+.mano-history-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.mano-history-chip {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.mano-history-chip.chip-success {
+  background: rgba(46, 204, 113, 0.15);
+  color: #1a7f37;
+}
+
+.mano-history-chip.chip-danger {
+  background: rgba(229, 72, 77, 0.15);
+  color: #cf222e;
+}
+
 .tx-table {
   width: 100%;
   border-collapse: collapse;

@@ -57,6 +57,7 @@ if (isset($routes[$key])) {
 // Rutas con parámetros (p. ej. /api/tables/{code}/ante).
 $paramRoutes = [
     'GET #^/api/tables/([A-Za-z0-9]+)$#' => [TableController::class, 'show'],
+    'GET #^/api/tables/([A-Za-z0-9]+)/mano-history$#' => [TableController::class, 'manoHistory'],
     'PUT #^/api/tables/([A-Za-z0-9]+)/ante$#' => [TableController::class, 'updateAnte'],
     'POST #^/api/tables/([A-Za-z0-9]+)/start$#' => [TableController::class, 'startPartida'],
     'POST #^/api/tables/([A-Za-z0-9]+)/topup$#' => [TableController::class, 'topup'],
