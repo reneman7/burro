@@ -69,4 +69,11 @@ final class Config
     {
         return self::value('INTERNAL_API_KEY', 'burro-dev-internal-key-change-me-too');
     }
+
+    // Base del servicio de tiempo real (Node), para que PHP le avise
+    // directamente cuando cambia el estado de una mesa (ver RealtimeNotifier).
+    public static function realtimeUrl(): string
+    {
+        return self::value('REALTIME_URL', 'http://localhost:4000');
+    }
 }

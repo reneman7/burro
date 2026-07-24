@@ -3,8 +3,8 @@ import { randomInt } from 'node:crypto';
 // Los 4 palos en español, coincidiendo con el ENUM de la base de datos.
 export const SUITS = ['diamantes', 'espadas', 'corazones', 'treboles'];
 
-// Orden de menor a mayor: el As es la carta más baja, el Rey la más alta.
-export const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+// Orden de menor a mayor: el As es la carta MÁS ALTA (le gana a todo, incluido el Rey).
+export const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
 const SUIT_CODE = { diamantes: 'D', espadas: 'E', corazones: 'C', treboles: 'T' };
 const CODE_SUIT = Object.fromEntries(Object.entries(SUIT_CODE).map(([k, v]) => [v, k]));

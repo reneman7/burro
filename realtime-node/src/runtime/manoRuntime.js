@@ -6,24 +6,26 @@ import { computeManoPayments } from '../game/scoring.js';
 import { isHigherRank } from '../game/deck.js';
 import { rotateFrom } from '../game/mano.js';
 
-const TURN_TIMEOUT_MS = 30_000;
+const DEFAULT_TURN_TIMEOUT_MS = 30_000;
 
 /**
  * Contraparte "interactiva" de game/mano.js: en vez de simular una mano
  * completa de forma síncrona con callbacks, esta clase avanza paso a paso
- * en respuesta a eventos reales (jugadas de socket) o a timers de 30s,
- * emitiendo eventos para que la capa de sockets transmita el estado y
- * persista resultados. La validez de cada jugada se apoya en las mismas
- * funciones puras de game/trickRules.js, game/exchange.js, etc.
+ * en respuesta a eventos reales (jugadas de socket) o a un timer por turno
+ * (configurable desde el panel de admin, turn_timeout_seconds), emitiendo
+ * eventos para que la capa de sockets transmita el estado y persista
+ * resultados. La validez de cada jugada se apoya en las mismas funciones
+ * puras de game/trickRules.js, game/exchange.js, etc.
  */
 export class ManoRuntime extends EventEmitter {
-  constructor({ shoe, seatOrderFromDealerRight, dealerId, isMandatory, currentFondo, maxExchange }) {
+  constructor({ shoe, seatOrderFromDealerRight, dealerId, isMandatory, currentFondo, maxExchange, turnTimeoutMs }) {
     super();
     this.seatOrderFromDealerRight = seatOrderFromDealerRight;
     this.dealerId = dealerId;
     this.isMandatory = isMandatory;
     this.currentFondo = currentFondo;
     this.maxExchange = maxExchange;
+    this.turnTimeoutMs = turnTimeoutMs ?? DEFAULT_TURN_TIMEOUT_MS;
 
     const { hands, trumpCard, shoe: shoeAfterDeal } = dealMano(shoe, seatOrderFromDealerRight);
     this.allHands = hands;
@@ -317,8 +319,8 @@ export class ManoRuntime extends EventEmitter {
 
   _armTimer(fn) {
     this._clearTimer();
-    this.turnDeadline = Date.now() + TURN_TIMEOUT_MS;
-    this.timer = setTimeout(fn, TURN_TIMEOUT_MS);
+    this.turnDeadline = Date.now() + this.turnTimeoutMs;
+    this.timer = setTimeout(fn, this.turnTimeoutMs);
   }
 
   _clearTimer() {

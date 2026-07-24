@@ -64,15 +64,15 @@ test('mano completa de 3 jugadores, resultado determinístico verificado carta p
   assert.equal(result.tricks[2].winnerId, 'C');
   // Baza 4: C lidera 5♣, A no tiene tréboles ni triunfo (libre, 6♦), B sigue 6♣ -> gana B (6 > 5).
   assert.equal(result.tricks[3].winnerId, 'B');
-  // Baza 5: B lidera 7♦, C sigue A♦ (el As es la carta más baja), A libre (3♠) -> gana B (7 > A).
-  assert.equal(result.tricks[4].winnerId, 'B');
+  // Baza 5: B lidera 7♦, C sigue A♦ (el As es la carta MÁS ALTA) -> gana C (A > 7).
+  assert.equal(result.tricks[4].winnerId, 'C');
 
-  assert.deepEqual(result.points, { B: 2, C: 1, A: 2 });
+  assert.deepEqual(result.points, { B: 1, C: 2, A: 2 });
 
-  // A y B se salvan (2 pts c/u), C no (1 pt). Paga el fondo actual (10), se
-  // reparte 5/5 entre A y B; el fondo acumulado no se toca.
-  assert.deepEqual(result.payments.saved.sort(), ['A', 'B']);
-  assert.deepEqual(result.payments.notSaved, ['C']);
+  // A y C se salvan (2 pts c/u), B no (1 pt). Paga el fondo actual (10), se
+  // reparte 5/5 entre A y C; el fondo acumulado no se toca.
+  assert.deepEqual(result.payments.saved.sort(), ['A', 'C']);
+  assert.deepEqual(result.payments.notSaved, ['B']);
   assert.equal(result.payments.paymentPerLoser, 10);
   assert.equal(result.payments.payoutPerWinner, 5);
   assert.equal(result.payments.newFondo, 10);

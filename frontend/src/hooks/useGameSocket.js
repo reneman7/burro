@@ -64,10 +64,14 @@ export function useGameSocket(tableId) {
     const onTrickFinished = (result) => {
       setMyTurn(null);
       setLastTrickWinner(result.winnerId);
+      // Deja ver la baza completa y quién la ganó unos segundos antes de
+      // limpiar; si de todas formas se pierde este timer (p. ej. por un
+      // corte de conexión momentáneo), el próximo game:state que llegue ya
+      // corrige trickPlays al valor real, así que nunca se queda "pegado".
       setTimeout(() => {
         setTrickPlays([]);
         setLastTrickWinner(null);
-      }, 1800);
+      }, 3500);
     };
 
     const onManoResult = (result) =>

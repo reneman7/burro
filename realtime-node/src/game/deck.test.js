@@ -35,15 +35,15 @@ test('cardCode / parseCard hacen roundtrip para todas las cartas', () => {
   }
 });
 
-test('rankValue: el As es el más bajo, el Rey el más alto', () => {
-  assert.equal(rankValue('A'), 0);
-  assert.equal(rankValue('K'), RANKS.length - 1);
+test('rankValue: el 2 es el más bajo, el As es el más alto', () => {
+  assert.equal(rankValue('2'), 0);
+  assert.equal(rankValue('A'), RANKS.length - 1);
   assert.ok(rankValue('5') > rankValue('4'));
-  assert.ok(rankValue('K') > rankValue('A'));
+  assert.ok(rankValue('A') > rankValue('K'));
 });
 
 test('isHigherRank compara correctamente', () => {
   assert.equal(isHigherRank('5', '4'), true);
   assert.equal(isHigherRank('4', '5'), false);
-  assert.equal(isHigherRank('K', 'A'), true);
+  assert.equal(isHigherRank('A', 'K'), true);
 });

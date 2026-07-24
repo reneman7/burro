@@ -124,6 +124,9 @@ export default function GameTable({ table, currentUserId }) {
         ))}
       </div>
 
+      {game.lastTrickWinner && (
+        <p className="trick-winner-banner">🏆 {usernameOf(game.lastTrickWinner)} ganó esta baza</p>
+      )}
       <div className="trick-area">
         {game.trickPlays.length === 0 && game.phase === 'playing' && <p>Esperando la primera carta de la baza...</p>}
         {game.trickPlays.map((play, i) => (

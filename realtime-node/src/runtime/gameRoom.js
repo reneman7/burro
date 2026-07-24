@@ -141,6 +141,7 @@ export class GameRoom {
     this.partida.fondo = partidaRow.fondo_acumulado;
 
     const maxExchange = await getAdminSetting('max_card_exchange');
+    const turnTimeoutSeconds = await getAdminSetting('turn_timeout_seconds');
 
     const dealerIndex = this.partida.seatOrderIds.indexOf(dealerId);
     const seatOrderFromDealerRight = rotateArray(this.partida.seatOrderIds, (dealerIndex + 1) % this.partida.seatOrderIds.length);
@@ -155,6 +156,7 @@ export class GameRoom {
       isMandatory,
       currentFondo: this.partida.fondo,
       maxExchange,
+      turnTimeoutMs: turnTimeoutSeconds * 1000,
     });
     this.manoNumber = manoNumber;
 

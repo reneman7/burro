@@ -5,6 +5,7 @@ namespace Burro\Controllers;
 use Burro\AdminSettings;
 use Burro\Db;
 use Burro\Http;
+use Burro\RealtimeNotifier;
 use PDO;
 
 final class TableController
@@ -53,6 +54,7 @@ final class TableController
             throw $e;
         }
 
+        RealtimeNotifier::tableChanged($tableId);
         Http::json($this->getTableState($db, $tableId), 201);
     }
 
@@ -113,6 +115,7 @@ final class TableController
             throw $e;
         }
 
+        RealtimeNotifier::tableChanged((int) $table['id']);
         Http::json($this->getTableState($db, (int) $table['id']));
     }
 
@@ -167,6 +170,7 @@ final class TableController
             throw $e;
         }
 
+        RealtimeNotifier::tableChanged((int) $table['id']);
         Http::json($this->getTableState($db, (int) $table['id']));
     }
 
@@ -231,6 +235,7 @@ final class TableController
         $stmt = $db->prepare('UPDATE tables_ SET ante_value = ? WHERE id = ?');
         $stmt->execute([$anteValue, $table['id']]);
 
+        RealtimeNotifier::tableChanged((int) $table['id']);
         Http::json($this->getTableState($db, (int) $table['id']));
     }
 
@@ -294,6 +299,7 @@ final class TableController
 
         // El reparto de cartas y el motor de la mano 1 los maneja el servicio de
         // tiempo real (Fase 2/3), que detectará esta partida 'active' sin manos aún.
+        RealtimeNotifier::tableChanged((int) $table['id']);
         Http::json(['partida_id' => $partidaId] + $this->getTableState($db, (int) $table['id']), 201);
     }
 
