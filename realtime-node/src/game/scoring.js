@@ -1,4 +1,13 @@
 const POINTS_TO_SAVE = 2;
+const CENTS_PER_UNIT = 100;
+
+// Los montos son decimales (2 posiciones), pero dividir floats directamente
+// arrastra errores de precisión (0.1 + 0.2 !== 0.3). Toda la división/
+// residuo de este archivo se hace en centavos (enteros) y se vuelve a
+// convertir a unidades recién al final.
+function toCents(amount) {
+  return Math.round(amount * CENTS_PER_UNIT);
+}
 
 /**
  * Calcula el resultado económico de una mano ya jugada.
@@ -32,19 +41,22 @@ export function computeManoPayments(entrants, pointsByUser, currentFondo) {
   const notSaved = entrants.filter((id) => (pointsByUser[id] ?? 0) < POINTS_TO_SAVE);
 
   const paymentPerLoser = notSaved.length > 0 ? currentFondo : 0;
-  const totalCollected = paymentPerLoser * notSaved.length;
+  const totalCollectedCents = toCents(paymentPerLoser) * notSaved.length;
+  const totalCollected = totalCollectedCents / CENTS_PER_UNIT;
 
   const payouts = {};
-  let newFondo = currentFondo;
+  let newFondoCents = toCents(currentFondo);
+  let payoutPerWinner = 0;
 
-  if (totalCollected > 0 && saved.length > 0) {
-    const payoutPerWinner = Math.floor(totalCollected / saved.length);
-    const remainder = totalCollected - payoutPerWinner * saved.length;
+  if (totalCollectedCents > 0 && saved.length > 0) {
+    const payoutPerWinnerCents = Math.floor(totalCollectedCents / saved.length);
+    const remainderCents = totalCollectedCents - payoutPerWinnerCents * saved.length;
+    payoutPerWinner = payoutPerWinnerCents / CENTS_PER_UNIT;
     for (const id of saved) payouts[id] = payoutPerWinner;
-    newFondo = currentFondo + remainder; // el residuo de redondeo se queda en el fondo
-  } else if (totalCollected > 0 && saved.length === 0) {
+    newFondoCents += remainderCents; // el residuo de redondeo (a lo sumo unos centavos) se queda en el fondo
+  } else if (totalCollectedCents > 0 && saved.length === 0) {
     // Nadie se salvó: lo pagado se queda acumulado en el fondo.
-    newFondo = currentFondo + totalCollected;
+    newFondoCents += totalCollectedCents;
   }
 
   const partidaEnds = entrants.length > 0 && notSaved.length === 0;
@@ -54,9 +66,9 @@ export function computeManoPayments(entrants, pointsByUser, currentFondo) {
     notSaved,
     paymentPerLoser,
     totalCollected,
-    payoutPerWinner: saved.length > 0 ? Math.floor(totalCollected / saved.length) : 0,
+    payoutPerWinner,
     payouts,
-    newFondo,
+    newFondo: newFondoCents / CENTS_PER_UNIT,
     partidaEnds,
   };
 }

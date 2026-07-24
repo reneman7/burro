@@ -51,15 +51,24 @@ test('1 solo entrante (dealer forzado) se salva automáticamente y termina la pa
   assert.equal(result.totalCollected, 0);
 });
 
-test('residuo de redondeo se queda en el fondo cuando el pago no se divide exacto', () => {
-  // 1 perdedor paga el fondo (7), repartido entre 3 salvados: 7/3 = 2 c/u, sobra 1.
+test('el reparto se divide en centavos, no en unidades enteras', () => {
+  // 1 perdedor paga el fondo (7), repartido entre 3 salvados: 7/3 = 2.33 c/u
+  // (redondeando a centavos), sobran 0.01.
   const result = computeManoPayments(['A', 'B', 'C', 'D'], { A: 2, B: 2, C: 2, D: 1 }, 7);
   assert.equal(result.totalCollected, 7);
-  assert.equal(result.payoutPerWinner, 2);
-  assert.equal(result.payouts.A, 2);
-  assert.equal(result.payouts.B, 2);
-  assert.equal(result.payouts.C, 2);
-  assert.equal(result.newFondo, 7 + 1, 'el residuo (1) se suma al fondo en vez de perderse');
+  assert.equal(result.payoutPerWinner, 2.33);
+  assert.equal(result.payouts.A, 2.33);
+  assert.equal(result.payouts.B, 2.33);
+  assert.equal(result.payouts.C, 2.33);
+  assert.equal(result.newFondo, 7.01, 'el residuo (0.01) se suma al fondo en vez de perderse');
+});
+
+test('con montos que ya son decimales, el residuo sigue siendo de centavos, no de unidades', () => {
+  // 1 perdedor paga el fondo (10.50), repartido entre 3 salvados: 3.50 c/u exacto.
+  const result = computeManoPayments(['A', 'B', 'C', 'D'], { A: 2, B: 2, C: 2, D: 1 }, 10.5);
+  assert.equal(result.totalCollected, 10.5);
+  assert.equal(result.payoutPerWinner, 3.5);
+  assert.equal(result.newFondo, 10.5, 'se divide exacto, no hay residuo');
 });
 
 test('conservación de fichas: lo que pagan los perdedores siempre es igual a payouts + residuo agregado al fondo', () => {

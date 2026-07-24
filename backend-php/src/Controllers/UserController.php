@@ -4,6 +4,7 @@ namespace Burro\Controllers;
 
 use Burro\Db;
 use Burro\Http;
+use Burro\Money;
 use PDO;
 
 final class UserController
@@ -31,7 +32,7 @@ final class UserController
     {
         $claims = Http::requireAuth();
         $body = Http::body();
-        $amount = (int) ($body['amount'] ?? 0);
+        $amount = Money::of($body['amount'] ?? 0);
 
         if ($amount < 1 || $amount > self::MAX_RECHARGE) {
             Http::error("El monto debe ser entre 1 y " . self::MAX_RECHARGE);
@@ -58,7 +59,7 @@ final class UserController
 
         $stmt = $db->prepare('SELECT credits FROM users WHERE id = ?');
         $stmt->execute([$userId]);
-        $credits = (int) $stmt->fetch()['credits'];
+        $credits = Money::of($stmt->fetch()['credits']);
 
         Http::json(['credits' => $credits]);
     }

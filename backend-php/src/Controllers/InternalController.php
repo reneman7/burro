@@ -4,6 +4,7 @@ namespace Burro\Controllers;
 
 use Burro\Db;
 use Burro\Http;
+use Burro\Money;
 use PDO;
 
 /**
@@ -255,7 +256,7 @@ final class InternalController
         $db = Db::get();
         $tableId = $body['table_id'];
         $seatOrderIds = $body['seat_order_ids'];
-        $anteValue = $body['ante_value'];
+        $anteValue = Money::of($body['ante_value']);
 
         $db->beginTransaction();
         try {
@@ -268,7 +269,7 @@ final class InternalController
                 )->execute([$userId, $tableId, -$anteValue, $partidaId]);
             }
             $db->prepare('UPDATE partidas SET fondo_acumulado = fondo_acumulado + ? WHERE id = ?')
-                ->execute([$anteValue * count($seatOrderIds), $partidaId]);
+                ->execute([Money::of($anteValue * count($seatOrderIds)), $partidaId]);
 
             $db->commit();
         } catch (\Throwable $e) {
@@ -290,7 +291,7 @@ final class InternalController
 
         $balances = [];
         foreach ($stmt->fetchAll() as $row) {
-            $balances[$row['user_id']] = (int) $row['table_balance'];
+            $balances[$row['user_id']] = Money::of($row['table_balance']);
         }
 
         Http::json(['balances' => $balances]);
@@ -302,20 +303,31 @@ final class InternalController
         $body = Http::body();
         $db = Db::get();
         $tableId = $body['table_id'];
-        $saved = $body['saved'];
-        $fondo = $body['fondo'];
+        $saved = array_values($body['saved']);
+        $fondo = Money::of($body['fondo']);
+        $share = 0.0;
 
         $db->beginTransaction();
         try {
             if (count($saved) > 0) {
-                $share = intdiv($fondo, count($saved));
-                foreach ($saved as $userId) {
+                // División en centavos para no perder fichas por redondeo: el
+                // residuo que no se divide exacto (a lo sumo unos centavos) se
+                // le suma al primero, en vez de desaparecer al reiniciar el
+                // fondo en 0 para la siguiente partida.
+                $fondoCents = (int) round($fondo * 100);
+                $shareCents = intdiv($fondoCents, count($saved));
+                $remainderCents = $fondoCents - $shareCents * count($saved);
+                $share = $shareCents / 100;
+
+                foreach ($saved as $i => $userId) {
+                    $cents = $shareCents + ($i === 0 ? $remainderCents : 0);
+                    $payout = $cents / 100;
                     $db->prepare(
                         'UPDATE table_players SET table_balance = table_balance + ? WHERE table_id = ? AND user_id = ?'
-                    )->execute([$share, $tableId, $userId]);
+                    )->execute([$payout, $tableId, $userId]);
                     $db->prepare(
                         "INSERT INTO credit_transactions (user_id, table_id, amount, type, reference_id) VALUES (?, ?, ?, 'payout', ?)"
-                    )->execute([$userId, $tableId, $share, $partidaId]);
+                    )->execute([$userId, $tableId, $payout, $partidaId]);
                 }
             }
 
@@ -330,7 +342,7 @@ final class InternalController
             throw $e;
         }
 
-        Http::json(['ok' => true]);
+        Http::json(['ok' => true, 'payout_per_winner' => $share]);
     }
 
     /** Espejo de TableController::getTableState, para que Node avise al lobby sin tocar MySQL. */
@@ -354,13 +366,19 @@ final class InternalController
              ORDER BY tp.seat_order ASC"
         );
         $stmt->execute([$tableId]);
-        $players = $stmt->fetchAll();
+        $players = array_map(static fn ($p) => [
+            'user_id' => (int) $p['user_id'],
+            'username' => $p['username'],
+            'seat_order' => (int) $p['seat_order'],
+            'table_balance' => Money::of($p['table_balance']),
+            'status' => $p['status'],
+        ], $stmt->fetchAll());
 
         Http::json(['state' => [
             'id' => (int) $table['id'],
             'code' => $table['code'],
             'name' => $table['name'],
-            'ante_value' => (int) $table['ante_value'],
+            'ante_value' => Money::of($table['ante_value']),
             'status' => $table['status'],
             'created_by' => (int) $table['created_by'],
             'players' => $players,

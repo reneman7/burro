@@ -1,19 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Card from './Card';
 import TurnTimer from './TurnTimer';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { formatMoney } from '../utils/money';
 
 const SUIT_LABEL = { diamantes: 'Diamantes', espadas: 'Espadas', corazones: 'Corazones', treboles: 'Tréboles' };
 
-export default function GameTable({ table, currentUserId }) {
+export default function GameTable({ table, currentUserId, isCreator, onPartidaFinished, onNewPartida }) {
   const { token, refreshUser } = useAuth();
   const game = useGameSocket(table.id);
   const [selectedToDiscard, setSelectedToDiscard] = useState([]);
   const [topupAmount, setTopupAmount] = useState(20);
   const [topupError, setTopupError] = useState('');
   const [toppingUp, setToppingUp] = useState(false);
+
+  // El servidor marca la mesa como 'waiting' apenas termina la partida (para
+  // poder arrancar otra), pero el resumen final se queda visible en pantalla
+  // hasta que el creador decide pasar a la siguiente pantalla.
+  useEffect(() => {
+    if (game.partidaResult) onPartidaFinished?.();
+  }, [game.partidaResult, onPartidaFinished]);
 
   const usernameOf = useMemo(() => {
     const map = Object.fromEntries(table.players.map((p) => [p.user_id, p.username]));
@@ -69,7 +77,7 @@ export default function GameTable({ table, currentUserId }) {
             Triunfo: <Card card={game.trumpCard} small /> <span>{SUIT_LABEL[game.trumpCard.suit]}</span>
           </div>
         )}
-        {typeof game.fondo === 'number' && <div>Fondo acumulado: {game.fondo}</div>}
+        {typeof game.fondo === 'number' && <div>Fondo acumulado: {formatMoney(game.fondo)}</div>}
         {!game.connected && <div className="achico-tag">Conectando en vivo...</div>}
       </div>
 
@@ -92,6 +100,7 @@ export default function GameTable({ table, currentUserId }) {
                 <input
                   type="number"
                   min={1}
+                  step="0.01"
                   value={topupAmount}
                   onChange={(e) => setTopupAmount(e.target.value)}
                   required
@@ -233,16 +242,18 @@ export default function GameTable({ table, currentUserId }) {
           <h3>Resultado de la mano {game.manoResult.manoNumber}</h3>
           <p>
             Se salvaron: {game.manoResult.saved.map(usernameOf).join(', ') || 'nadie'}
-            {game.manoResult.payoutPerWinner > 0 && ` (cada uno recibió ${game.manoResult.payoutPerWinner})`}
+            {game.manoResult.payoutPerWinner > 0 &&
+              ` (cada uno recibió ${formatMoney(game.manoResult.payoutPerWinner)})`}
           </p>
           <p>
             No se salvaron: {game.manoResult.notSaved.map(usernameOf).join(', ') || 'nadie'}
-            {game.manoResult.paymentPerLoser > 0 && ` (cada uno pagó ${game.manoResult.paymentPerLoser})`}
+            {game.manoResult.paymentPerLoser > 0 &&
+              ` (cada uno pagó ${formatMoney(game.manoResult.paymentPerLoser)})`}
           </p>
           {game.manoResult.eliminated.length > 0 && (
             <p>Renunciaron: {game.manoResult.eliminated.map(usernameOf).join(', ')}</p>
           )}
-          <p>Fondo acumulado ahora: {game.manoResult.newFondo}</p>
+          <p>Fondo acumulado ahora: {formatMoney(game.manoResult.newFondo)}</p>
           {!game.manoResult.partidaEnds && <p>La partida continúa con otra mano en unos segundos...</p>}
         </div>
       )}
@@ -251,11 +262,17 @@ export default function GameTable({ table, currentUserId }) {
         <div className="banner banner-result banner-final">
           <h3>¡Partida terminada!</h3>
           <p>Se repartió el fondo entre: {game.partidaResult.saved.map(usernameOf).join(', ')}</p>
-          <p>Fondo repartido: {game.partidaResult.fondoRepartido}</p>
+          <p>Fondo repartido: {formatMoney(game.partidaResult.fondoRepartido)}</p>
           {game.partidaResult.payoutPerWinner > 0 && (
-            <p>Cada uno recibió: {game.partidaResult.payoutPerWinner}</p>
+            <p>Cada uno recibió: {formatMoney(game.partidaResult.payoutPerWinner)}</p>
           )}
-          <p>Vuelve a la sala de espera para definir la apuesta y comenzar una nueva partida.</p>
+          {isCreator ? (
+            <div className="action-row">
+              <button onClick={() => onNewPartida?.()}>Nueva partida</button>
+            </div>
+          ) : (
+            <p>Esperando a que el creador de la mesa arranque una nueva partida...</p>
+          )}
         </div>
       )}
     </div>

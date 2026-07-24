@@ -79,11 +79,18 @@ export async function getTableBalances(tableId) {
   return balances;
 }
 
-/** Reparte el fondo acumulado (fin de partida) entre los salvados de la última mano y cierra la partida. */
+/**
+ * Reparte el fondo acumulado (fin de partida) entre los salvados de la última
+ * mano y cierra la partida. Devuelve lo que efectivamente le tocó a cada
+ * salvado (PHP hace la división en centavos), para no recalcularlo por
+ * separado en Node y arriesgarnos a que no coincida con lo que de verdad se
+ * pagó.
+ */
 export async function finalizePartida({ tableId, partidaId, saved, fondo }) {
-  await internalApi.post(`/internal/partidas/${partidaId}/finalize`, {
+  const { payout_per_winner: payoutPerWinner } = await internalApi.post(`/internal/partidas/${partidaId}/finalize`, {
     table_id: tableId,
     saved,
     fondo,
   });
+  return { payoutPerWinner };
 }

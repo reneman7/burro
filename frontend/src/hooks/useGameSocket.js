@@ -62,7 +62,7 @@ export function useGameSocket(tableId) {
     };
 
     const onManoStarted = (payload) => {
-      setState((prev) => ({ ...prev, ...payload, manoResult: null, paused: null }));
+      setState((prev) => ({ ...prev, ...payload, manoResult: null, partidaResult: null, paused: null }));
       frozenRef.current = false;
       setTrickPlays([]);
       setLastTrickWinner(null);

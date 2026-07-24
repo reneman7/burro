@@ -4,6 +4,7 @@ require __DIR__ . '/includes/bootstrap.php';
 $adminUser = admin_require_login();
 
 use Burro\Db;
+use Burro\Money;
 
 $db = Db::get();
 $flash = '';
@@ -15,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         if ($action === 'adjust_credits') {
-            $delta = (int) ($_POST['delta'] ?? 0);
-            if ($delta === 0) {
+            $delta = Money::of($_POST['delta'] ?? 0);
+            if ($delta === 0.0) {
                 throw new RuntimeException('El ajuste no puede ser 0');
             }
 
@@ -27,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($row === false) {
                 throw new RuntimeException('Usuario no encontrado');
             }
-            if ((int) $row['credits'] + $delta < 0) {
+            if (Money::of($row['credits']) + $delta < 0) {
                 throw new RuntimeException('El ajuste dejaría el saldo en negativo');
             }
 
@@ -81,7 +82,7 @@ require __DIR__ . '/includes/layout_header.php';
       <tr>
         <td><?= (int) $u['id'] ?></td>
         <td><?= h($u['username']) ?></td>
-        <td><?= (int) $u['credits'] ?></td>
+        <td><?= number_format((float) $u['credits'], 2) ?></td>
         <td><?= h($u['role']) ?></td>
         <td><?= ((int) $u['is_active']) === 1 ? 'Activo' : 'Bloqueado' ?></td>
         <td><?= h($u['created_at']) ?></td>
@@ -89,7 +90,7 @@ require __DIR__ . '/includes/layout_header.php';
           <form class="inline" method="post">
             <input type="hidden" name="action" value="adjust_credits">
             <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">
-            <input type="number" name="delta" placeholder="+/-" style="width:80px" required>
+            <input type="number" step="0.01" name="delta" placeholder="+/-" style="width:80px" required>
             <button type="submit">Ajustar</button>
           </form>
           <form class="inline" method="post" onsubmit="return confirm('¿Confirmas el cambio de estado?');">

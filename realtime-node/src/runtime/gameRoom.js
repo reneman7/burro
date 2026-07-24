@@ -269,6 +269,11 @@ export class GameRoom {
     this.partida.shoe = result.shoe;
     this.partida.fondo = result.payments.newFondo;
 
+    // Las fichas de mesa de cada jugador cambiaron (ante + pagos/cobros de
+    // esta mano); sin esto, la lista de "Jugadores sentados" de la sala de
+    // espera se quedaba con el valor viejo hasta que la partida terminaba.
+    await this._notifyLobby();
+
     this.broadcastPublic('game:manoResult', {
       manoNumber: this.manoNumber,
       trumpCard: result.trumpCard,
@@ -286,14 +291,12 @@ export class GameRoom {
     this.mano = null;
 
     if (result.payments.partidaEnds) {
-      await finalizePartida({
+      const { payoutPerWinner } = await finalizePartida({
         tableId: this.tableId,
         partidaId: this.partida.id,
         saved: result.payments.saved,
         fondo: result.payments.newFondo,
       });
-      const savedCount = result.payments.saved.length;
-      const payoutPerWinner = savedCount > 0 ? Math.floor(result.payments.newFondo / savedCount) : 0;
       this.broadcastPublic('game:partidaFinished', {
         saved: result.payments.saved,
         fondoRepartido: result.payments.newFondo,
@@ -303,11 +306,10 @@ export class GameRoom {
 
       // Nadie hizo una llamada REST para llegar hasta aquí (la partida terminó
       // sola dentro del motor), así que le avisamos al lobby directamente para
-      // que la sala de espera vuelva a mostrarse (mesa en 'waiting' de nuevo).
-      const freshTableState = await loadTableState(this.tableId);
-      if (freshTableState) {
-        this.io.to(lobbyRoomName(this.tableId)).emit('table:state', freshTableState);
-      }
+      // que la sala de espera muestre la mesa en 'waiting' de nuevo (aunque el
+      // resumen de la partida se queda visible en pantalla hasta que el
+      // creador arranque la siguiente).
+      await this._notifyLobby();
       return;
     }
 
@@ -322,6 +324,14 @@ export class GameRoom {
         });
       });
     }, NEXT_MANO_DELAY_MS + MANO_RESULT_BROADCAST_DELAY_MS);
+  }
+
+  /** Refresca el estado de la mesa (fichas de cada jugador, etc.) para quien esté viendo la sala de espera. */
+  async _notifyLobby() {
+    const freshTableState = await loadTableState(this.tableId);
+    if (freshTableState) {
+      this.io.to(lobbyRoomName(this.tableId)).emit('table:state', freshTableState);
+    }
   }
 
   // ------------------------------------------------------------------

@@ -11,7 +11,7 @@ CREATE TABLE users (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username      VARCHAR(32) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  credits       INT NOT NULL DEFAULT 0,       -- saldo global (fichas virtuales)
+  credits       DECIMAL(10,2) NOT NULL DEFAULT 0,       -- saldo global (fichas virtuales)
   role          ENUM('player','admin') NOT NULL DEFAULT 'player',
   is_active     TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -33,7 +33,7 @@ CREATE TABLE tables_ (
   code        CHAR(6) NOT NULL UNIQUE,
   name        VARCHAR(64) NOT NULL,
   created_by  INT UNSIGNED NOT NULL,
-  ante_value  INT UNSIGNED NOT NULL DEFAULT 1,
+  ante_value  DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 1,
   status      ENUM('waiting','playing','finished') NOT NULL DEFAULT 'waiting',
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES users(id)
@@ -45,7 +45,7 @@ CREATE TABLE table_players (
   table_id      INT UNSIGNED NOT NULL,
   user_id       INT UNSIGNED NOT NULL,
   seat_order    INT UNSIGNED NOT NULL,        -- orden de llegada = orden de turno
-  table_balance INT NOT NULL DEFAULT 0,        -- fichas de mesa (buy-in), separado del saldo global
+  table_balance DECIMAL(10,2) NOT NULL DEFAULT 0,        -- fichas de mesa (buy-in), separado del saldo global
   status        ENUM('active','spectator','left') NOT NULL DEFAULT 'active',
   joined_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_table_user (table_id, user_id),
@@ -59,9 +59,9 @@ CREATE TABLE table_players (
 CREATE TABLE partidas (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   table_id          INT UNSIGNED NOT NULL,
-  ante_value        INT UNSIGNED NOT NULL,
+  ante_value        DECIMAL(10,2) UNSIGNED NOT NULL,
   mandatory_manos   INT UNSIGNED NOT NULL,
-  fondo_acumulado   INT NOT NULL DEFAULT 0,     -- fondo de apuestas, crece cada mano
+  fondo_acumulado   DECIMAL(10,2) NOT NULL DEFAULT 0,     -- fondo de apuestas, crece cada mano
   status            ENUM('active','finished') NOT NULL DEFAULT 'active',
   started_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ended_at          DATETIME NULL,
@@ -78,8 +78,8 @@ CREATE TABLE manos (
   dealer_user_id INT UNSIGNED NOT NULL,
   is_mandatory  TINYINT(1) NOT NULL,
   trump_suit    ENUM('diamantes','espadas','corazones','treboles') NULL,
-  fondo_before  INT NOT NULL,
-  fondo_after   INT NULL,
+  fondo_before  DECIMAL(10,2) NOT NULL,
+  fondo_after   DECIMAL(10,2) NULL,
   status        ENUM('dealing','exchanging','entering','playing','finished') NOT NULL DEFAULT 'dealing',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (partida_id) REFERENCES partidas(id),
@@ -96,8 +96,8 @@ CREATE TABLE mano_players (
   points          TINYINT UNSIGNED NOT NULL DEFAULT 0,
   saved           TINYINT(1) NOT NULL DEFAULT 0,
   renounced       TINYINT(1) NOT NULL DEFAULT 0,
-  paid_penalty    INT NOT NULL DEFAULT 0,
-  received_payout INT NOT NULL DEFAULT 0,
+  paid_penalty    DECIMAL(10,2) NOT NULL DEFAULT 0,
+  received_payout DECIMAL(10,2) NOT NULL DEFAULT 0,
   UNIQUE KEY uniq_mano_user (mano_id, user_id),
   FOREIGN KEY (mano_id) REFERENCES manos(id),
   FOREIGN KEY (user_id) REFERENCES users(id)
@@ -135,7 +135,7 @@ CREATE TABLE credit_transactions (
   id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id      INT UNSIGNED NOT NULL,
   table_id     INT UNSIGNED NULL,
-  amount       INT NOT NULL,           -- positivo = ingreso, negativo = egreso
+  amount       DECIMAL(10,2) NOT NULL,           -- positivo = ingreso, negativo = egreso
   type         ENUM('buyin','cashout','ante','penalty','payout','admin_adjust','recharge') NOT NULL,
   reference_id INT UNSIGNED NULL,      -- id de mano/partida relacionada, según type
   created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

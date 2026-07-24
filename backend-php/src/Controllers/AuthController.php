@@ -5,6 +5,7 @@ namespace Burro\Controllers;
 use Burro\Db;
 use Burro\Http;
 use Burro\Jwt;
+use Burro\Money;
 
 final class AuthController
 {
@@ -72,7 +73,7 @@ final class AuthController
                 'id' => (int) $user['id'],
                 'username' => $user['username'],
                 'role' => $user['role'],
-                'credits' => (int) $user['credits'],
+                'credits' => Money::of($user['credits']),
             ],
         ]);
     }
@@ -94,7 +95,7 @@ final class AuthController
             'id' => (int) $user['id'],
             'username' => $user['username'],
             'role' => $user['role'],
-            'credits' => (int) $user['credits'],
+            'credits' => Money::of($user['credits']),
         ]);
     }
 }

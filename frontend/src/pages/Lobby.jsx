@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { formatMoney } from '../utils/money';
 
 export default function Lobby() {
   const { user, token, logout } = useAuth();
@@ -68,7 +69,7 @@ export default function Lobby() {
         <h1>Burro</h1>
         <div>
           <span>
-            {user?.username} · {user?.credits} créditos
+            {user?.username} · {formatMoney(user?.credits)} créditos
           </span>
           <button onClick={() => navigate('/cuenta')}>Mi cuenta</button>
           <button onClick={logout}>Salir</button>
@@ -86,6 +87,7 @@ export default function Lobby() {
             <input
               type="number"
               min={1}
+              step="0.01"
               value={anteValue}
               onChange={(e) => setAnteValue(e.target.value)}
               required
@@ -93,7 +95,14 @@ export default function Lobby() {
           </label>
           <label>
             Monto de entrada (fichas para esta mesa)
-            <input type="number" min={1} value={buyIn} onChange={(e) => setBuyIn(e.target.value)} required />
+            <input
+              type="number"
+              min={1}
+              step="0.01"
+              value={buyIn}
+              onChange={(e) => setBuyIn(e.target.value)}
+              required
+            />
           </label>
           {createError && <p className="error">{createError}</p>}
           <button type="submit" disabled={creating}>
@@ -117,6 +126,7 @@ export default function Lobby() {
             <input
               type="number"
               min={1}
+              step="0.01"
               value={joinBuyIn}
               onChange={(e) => setJoinBuyIn(e.target.value)}
               required
@@ -136,7 +146,7 @@ export default function Lobby() {
             {tables.map((t) => (
               <li key={t.id}>
                 <button className="link-button" onClick={() => navigate(`/mesa/${t.code}`)}>
-                  {t.name} · <code>{t.code}</code> · apuesta {t.ante_value} · {t.status}
+                  {t.name} · <code>{t.code}</code> · apuesta {formatMoney(t.ante_value)} · {t.status}
                 </button>
               </li>
             ))}

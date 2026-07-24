@@ -5,6 +5,7 @@ namespace Burro\Controllers;
 use Burro\AdminSettings;
 use Burro\Db;
 use Burro\Http;
+use Burro\Money;
 use Burro\RealtimeNotifier;
 use PDO;
 
@@ -18,8 +19,8 @@ final class TableController
         $body = Http::body();
 
         $name = trim((string) ($body['name'] ?? ''));
-        $anteValue = (int) ($body['ante_value'] ?? 0);
-        $buyIn = (int) ($body['buy_in'] ?? 0);
+        $anteValue = Money::of($body['ante_value'] ?? 0);
+        $buyIn = Money::of($body['buy_in'] ?? 0);
 
         if ($name === '') {
             $name = 'Mesa de ' . $claims['username'];
@@ -65,7 +66,7 @@ final class TableController
         $userId = (int) $claims['sub'];
 
         $code = strtoupper(trim((string) ($body['code'] ?? '')));
-        $buyIn = (int) ($body['buy_in'] ?? 0);
+        $buyIn = Money::of($body['buy_in'] ?? 0);
 
         if ($code === '') {
             Http::error('Falta el código de la mesa');
@@ -83,7 +84,7 @@ final class TableController
         if ($table['status'] === 'playing') {
             Http::error('Esa mesa ya tiene una partida en curso; espera a que termine', 409);
         }
-        if ($buyIn < (int) $table['ante_value']) {
+        if ($buyIn < Money::of($table['ante_value'])) {
             Http::error('El monto de entrada debe ser al menos igual a la apuesta inicial de la mesa');
         }
 
@@ -128,7 +129,7 @@ final class TableController
     {
         $claims = Http::requireAuth();
         $body = Http::body();
-        $amount = (int) ($body['amount'] ?? 0);
+        $amount = Money::of($body['amount'] ?? 0);
         $userId = (int) $claims['sub'];
 
         if ($amount < 1) {
@@ -211,7 +212,7 @@ final class TableController
     {
         $claims = Http::requireAuth();
         $body = Http::body();
-        $anteValue = (int) ($body['ante_value'] ?? 0);
+        $anteValue = Money::of($body['ante_value'] ?? 0);
 
         if ($anteValue < 1) {
             Http::error('La apuesta inicial debe ser al menos 1');
@@ -312,7 +313,7 @@ final class TableController
      * ya abierta) y valida que tenga saldo suficiente, para evitar condiciones de
      * carrera si el mismo usuario dispara dos compras simultáneas.
      */
-    private function lockUserCreditsOrFail(PDO $db, int $userId, int $required): void
+    private function lockUserCreditsOrFail(PDO $db, int $userId, float $required): void
     {
         $stmt = $db->prepare('SELECT credits FROM users WHERE id = ? FOR UPDATE');
         $stmt->execute([$userId]);
@@ -322,13 +323,13 @@ final class TableController
             $db->rollBack();
             Http::error('Usuario no encontrado', 404);
         }
-        if ((int) $row['credits'] < $required) {
+        if (Money::of($row['credits']) < $required) {
             $db->rollBack();
             Http::error('No tienes suficientes créditos para ese monto de entrada', 400);
         }
     }
 
-    private function seatPlayerAndBuyIn(PDO $db, int $tableId, int $userId, int $seatOrder, int $buyIn): void
+    private function seatPlayerAndBuyIn(PDO $db, int $tableId, int $userId, int $seatOrder, float $buyIn): void
     {
         $stmt = $db->prepare(
             "INSERT INTO table_players (table_id, user_id, seat_order, table_balance, status)
@@ -381,14 +382,14 @@ final class TableController
             'id' => (int) $table['id'],
             'code' => $table['code'],
             'name' => $table['name'],
-            'ante_value' => (int) $table['ante_value'],
+            'ante_value' => Money::of($table['ante_value']),
             'status' => $table['status'],
             'created_by' => (int) $table['created_by'],
             'players' => array_map(static fn ($p) => [
                 'user_id' => (int) $p['user_id'],
                 'username' => $p['username'],
                 'seat_order' => (int) $p['seat_order'],
-                'table_balance' => (int) $p['table_balance'],
+                'table_balance' => Money::of($p['table_balance']),
                 'status' => $p['status'],
             ], $players),
         ];

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../hooks/useSocket';
 import { api } from '../api/client';
 import GameTable from '../components/GameTable';
+import { formatMoney } from '../utils/money';
 
 export default function Mesa() {
   const { code } = useParams();
@@ -24,6 +25,12 @@ export default function Mesa() {
   const [mandatoryManos, setMandatoryManos] = useState(1);
   const [startError, setStartError] = useState('');
   const [starting, setStarting] = useState(false);
+
+  // Cuando una partida termina, el servidor marca la mesa como 'waiting' de
+  // inmediato (para que se pueda arrancar otra), pero no queremos que el
+  // resumen final desaparezca de la pantalla solo por eso: se queda visible
+  // hasta que el creador decida pasar a la siguiente pantalla.
+  const [showingPartidaEnd, setShowingPartidaEnd] = useState(false);
 
   // Carga inicial vía REST + suscripción en vivo por socket.
   useEffect(() => {
@@ -135,14 +142,14 @@ export default function Mesa() {
       </p>
       <p>
         Estado: <strong>{table.status}</strong> · Apuesta inicial actual:{' '}
-        <strong>{table.ante_value}</strong> {!connected && '· (conectando en vivo...)'}
+        <strong>{formatMoney(table.ante_value)}</strong> {!connected && '· (conectando en vivo...)'}
       </p>
 
       <h2>Jugadores sentados</h2>
       <ol className="seat-list">
         {table.players.map((p) => (
           <li key={p.user_id}>
-            {p.username} {p.user_id === table.created_by && '👑'} — {p.table_balance} fichas de mesa
+            {p.username} {p.user_id === table.created_by && '👑'} — {formatMoney(p.table_balance)} fichas de mesa
           </li>
         ))}
       </ol>
@@ -155,6 +162,7 @@ export default function Mesa() {
             <input
               type="number"
               min={table.ante_value}
+              step="0.01"
               value={joinBuyIn}
               onChange={(e) => setJoinBuyIn(e.target.value)}
               required
@@ -176,6 +184,7 @@ export default function Mesa() {
               <input
                 type="number"
                 min={1}
+                step="0.01"
                 placeholder={table.ante_value}
                 value={newAnte}
                 onChange={(e) => setNewAnte(e.target.value)}
@@ -205,7 +214,15 @@ export default function Mesa() {
         </div>
       )}
 
-      {table.status === 'playing' && <GameTable table={table} currentUserId={user.id} />}
+      {(table.status === 'playing' || showingPartidaEnd) && (
+        <GameTable
+          table={table}
+          currentUserId={user.id}
+          isCreator={isCreator}
+          onPartidaFinished={() => setShowingPartidaEnd(true)}
+          onNewPartida={() => setShowingPartidaEnd(false)}
+        />
+      )}
     </div>
   );
 }

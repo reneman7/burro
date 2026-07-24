@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { formatMoney } from '../utils/money';
 
 const TYPE_LABEL = {
   buyin: 'Entrada a mesa',
@@ -57,7 +58,7 @@ export default function Cuenta() {
       </header>
 
       <p>
-        Saldo global: <strong>{user?.credits} créditos</strong>
+        Saldo global: <strong>{formatMoney(user?.credits)} créditos</strong>
       </p>
 
       <form className="panel" onSubmit={handleRecharge}>
@@ -68,7 +69,15 @@ export default function Cuenta() {
         </p>
         <label>
           Monto
-          <input type="number" min={1} max={1000} value={amount} onChange={(e) => setAmount(e.target.value)} required />
+          <input
+            type="number"
+            min={1}
+            max={1000}
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            required
+          />
         </label>
         {error && <p className="error">{error}</p>}
         <button type="submit" disabled={submitting}>
@@ -97,7 +106,7 @@ export default function Cuenta() {
                 <td>{tx.table_code ?? '-'}</td>
                 <td className={tx.amount < 0 ? 'tx-negative' : 'tx-positive'}>
                   {tx.amount > 0 ? '+' : ''}
-                  {tx.amount}
+                  {formatMoney(tx.amount)}
                 </td>
               </tr>
             ))}
