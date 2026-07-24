@@ -26,6 +26,9 @@ export default function Mesa() {
   const [startError, setStartError] = useState('');
   const [starting, setStarting] = useState(false);
 
+  const [closeError, setCloseError] = useState('');
+  const [closing, setClosing] = useState(false);
+
   // Cuando una partida termina, el servidor marca la mesa como 'waiting' de
   // inmediato (para que se pueda arrancar otra), pero no queremos que el
   // resumen final desaparezca de la pantalla solo por eso: se queda visible
@@ -112,6 +115,21 @@ export default function Mesa() {
     }
   }
 
+  async function handleCloseTable() {
+    setCloseError('');
+    setClosing(true);
+    try {
+      const state = await api.closeTable(token, code);
+      setTable(state);
+      broadcastRefresh(state.id);
+      setShowingPartidaEnd(false);
+    } catch (err) {
+      setCloseError(err.message);
+    } finally {
+      setClosing(false);
+    }
+  }
+
   if (error) {
     return (
       <div className="mesa-page">
@@ -149,6 +167,13 @@ export default function Mesa() {
         Estado: <strong>{table.status}</strong> · Apuesta inicial actual:{' '}
         <strong>{formatMoney(table.ante_value)}</strong> {!connected && '· (conectando en vivo...)'}
       </p>
+
+      {table.status === 'finished' && (
+        <p className="banner banner-warning">
+          Esta mesa fue cerrada. Vuelve al lobby para crear o unirte a otra.
+        </p>
+      )}
+      {closeError && <p className="error">{closeError}</p>}
 
       <h2>Jugadores sentados</h2>
       <ol className="seat-list">
@@ -232,6 +257,8 @@ export default function Mesa() {
           canStartPartida={canStartPartida}
           onPartidaFinished={() => setShowingPartidaEnd(true)}
           onNewPartida={() => setShowingPartidaEnd(false)}
+          onCloseTable={handleCloseTable}
+          closing={closing}
         />
       )}
     </div>

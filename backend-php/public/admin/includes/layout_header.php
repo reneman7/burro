@@ -34,6 +34,7 @@
   <div>
     <a href="index.php">Panel</a>
     <a href="users.php">Usuarios</a>
+    <a href="tables.php">Mesas</a>
     <a href="settings.php">Configuración</a>
   </div>
   <div>

@@ -250,6 +250,12 @@ export class GameRoom {
 
   async _onManoFinished(result) {
     const manoId = this.currentManoRowId;
+    // Las manos obligatorias existen justamente para construir el fondo antes
+    // de que la partida pueda terminar; que TODOS los entrantes se salven en
+    // una de ellas (posible por azar con pocos jugadores, ej. 3-2 con 2
+    // entrantes) no debe cerrar la partida — solo una mano optativa puede
+    // hacerlo.
+    const partidaEnds = result.payments.partidaEnds && !this.mano.isMandatory;
 
     await finalizeManoRow(manoId, { fondoAfter: result.payments.newFondo });
 
@@ -289,13 +295,13 @@ export class GameRoom {
       paymentPerLoser: result.payments.paymentPerLoser,
       payoutPerWinner: result.payments.payoutPerWinner,
       newFondo: result.payments.newFondo,
-      partidaEnds: result.payments.partidaEnds,
+      partidaEnds,
     });
 
     this.mano.destroy();
     this.mano = null;
 
-    if (result.payments.partidaEnds) {
+    if (partidaEnds) {
       const { payoutPerWinner } = await finalizePartida({
         tableId: this.tableId,
         partidaId: this.partida.id,

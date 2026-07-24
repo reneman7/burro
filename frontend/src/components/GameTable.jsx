@@ -14,7 +14,15 @@ const PHASE_ACTION_LABEL = {
   playing: 'pensando qué carta tirar',
 };
 
-export default function GameTable({ table, currentUserId, canStartPartida, onPartidaFinished, onNewPartida }) {
+export default function GameTable({
+  table,
+  currentUserId,
+  canStartPartida,
+  onPartidaFinished,
+  onNewPartida,
+  onCloseTable,
+  closing,
+}) {
   const { token, refreshUser } = useAuth();
   const game = useGameSocket(table.id);
   const [selectedToDiscard, setSelectedToDiscard] = useState([]);
@@ -37,6 +45,22 @@ export default function GameTable({ table, currentUserId, canStartPartida, onPar
   const isMyTurn = game.turnUserId === currentUserId;
   const iAmEntrant = game.entrants.includes(currentUserId);
   const winningCard = game.trickPlays.find((p) => p.userId === game.lastTrickWinner)?.card;
+
+  // Un solo estado por asiento a la vez (nunca se acumulan): lo que está
+  // haciendo AHORA (si le toca) manda sobre lo último que ya resolvió.
+  function seatStatus(userId) {
+    if (game.turnUserId === userId && PHASE_ACTION_LABEL[game.phase]) {
+      return { text: PHASE_ACTION_LABEL[game.phase], isTurn: true };
+    }
+    if (game.eliminated.includes(userId)) return { text: 'Renunció' };
+    if (typeof game.exchangedCounts?.[userId] === 'number') {
+      const n = game.exchangedCounts[userId];
+      return { text: n > 0 ? `Cambió ${n} carta(s)` : 'No cambió cartas' };
+    }
+    if (game.nonEntrants.includes(userId)) return { text: 'No entró' };
+    if (game.entrants.includes(userId)) return { text: 'Entró' };
+    return null;
+  }
 
   function toggleDiscard(index) {
     setSelectedToDiscard((prev) => {
@@ -140,24 +164,15 @@ export default function GameTable({ table, currentUserId, canStartPartida, onPar
               {usernameOf(userId)} {userId === game.dealerId && <span title="Dealer">🎴</span>}
             </div>
             <div className="seat-points">{game.points[userId] ?? 0} pts</div>
-            {game.entrants.includes(userId) && !game.eliminated.includes(userId) && (
-              <div className="seat-tag seat-tag-ok">Entró</div>
-            )}
-            {game.nonEntrants.includes(userId) && <div className="seat-tag">No entró</div>}
-            {game.eliminated.includes(userId) && <div className="seat-tag">Renunció</div>}
-            {typeof game.exchangedCounts?.[userId] === 'number' && (
-              <div className="seat-tag">
-                {game.exchangedCounts[userId] > 0
-                  ? `Cambió ${game.exchangedCounts[userId]} carta(s)`
-                  : 'No cambió cartas'}
-              </div>
-            )}
-            {game.turnUserId === userId && (
-              <>
-                <div className="seat-tag seat-turn-label">{PHASE_ACTION_LABEL[game.phase] ?? 'en turno'}</div>
-                <TurnTimer deadline={game.turnDeadline} />
-              </>
-            )}
+            {(() => {
+              const status = seatStatus(userId);
+              return (
+                status && (
+                  <div className={`seat-tag ${status.isTurn ? 'seat-turn-label' : ''}`}>{status.text}</div>
+                )
+              );
+            })()}
+            {game.turnUserId === userId && <TurnTimer deadline={game.turnDeadline} />}
           </div>
         ))}
       </div>
@@ -290,6 +305,9 @@ export default function GameTable({ table, currentUserId, canStartPartida, onPar
           {canStartPartida ? (
             <div className="action-row">
               <button onClick={() => onNewPartida?.()}>Nueva partida</button>
+              <button onClick={() => onCloseTable?.()} disabled={closing} className="danger">
+                {closing ? 'Cerrando...' : 'Cerrar mesa'}
+              </button>
             </div>
           ) : (
             <p>Esperando a que se arranque una nueva partida...</p>

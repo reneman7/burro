@@ -60,6 +60,7 @@ $paramRoutes = [
     'PUT #^/api/tables/([A-Za-z0-9]+)/ante$#' => [TableController::class, 'updateAnte'],
     'POST #^/api/tables/([A-Za-z0-9]+)/start$#' => [TableController::class, 'startPartida'],
     'POST #^/api/tables/([A-Za-z0-9]+)/topup$#' => [TableController::class, 'topup'],
+    'POST #^/api/tables/([A-Za-z0-9]+)/close$#' => [TableController::class, 'close'],
 
     'GET #^/api/internal/settings/([A-Za-z0-9_]+)$#' => [InternalController::class, 'getSetting'],
     'GET #^/api/internal/tables/([0-9]+)/seat-order$#' => [InternalController::class, 'seatOrder'],

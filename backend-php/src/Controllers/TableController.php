@@ -84,6 +84,9 @@ final class TableController
         if ($table['status'] === 'playing') {
             Http::error('Esa mesa ya tiene una partida en curso; espera a que termine', 409);
         }
+        if ($table['status'] === 'finished') {
+            Http::error('Esta mesa está cerrada', 409);
+        }
         if ($buyIn < Money::of($table['ante_value'])) {
             Http::error('El monto de entrada debe ser al menos igual a la apuesta inicial de la mesa');
         }
@@ -303,6 +306,42 @@ final class TableController
         // tiempo real (Fase 2/3), que detectará esta partida 'active' sin manos aún.
         RealtimeNotifier::tableChanged((int) $table['id']);
         Http::json(['partida_id' => $partidaId] + $this->getTableState($db, (int) $table['id']), 201);
+    }
+
+    /**
+     * Cierra la mesa definitivamente (no se puede volver a unir nadie ni
+     * arrancar otra partida). Puede hacerlo el creador o a quien le tocaría
+     * repartir la siguiente mano; solo si no hay una partida en curso.
+     */
+    public function close(string $code): never
+    {
+        $claims = Http::requireAuth();
+        $db = Db::get();
+        $stmt = $db->prepare('SELECT * FROM tables_ WHERE code = ?');
+        $stmt->execute([strtoupper($code)]);
+        $table = $stmt->fetch();
+
+        if ($table === false) {
+            Http::error('No existe una mesa con ese código', 404);
+        }
+        if ($table['status'] === 'playing') {
+            Http::error('No se puede cerrar una mesa con una partida en curso', 409);
+        }
+        if ($table['status'] === 'finished') {
+            Http::error('Esta mesa ya está cerrada', 409);
+        }
+
+        $isCreator = (int) $table['created_by'] === (int) $claims['sub'];
+        $requiredDealerId = $this->nextDealerId($db, (int) $table['id']);
+        if (!$isCreator && $requiredDealerId !== (int) $claims['sub']) {
+            Http::error('No tienes permiso para cerrar esta mesa', 403);
+        }
+
+        $stmt = $db->prepare("UPDATE tables_ SET status = 'finished' WHERE id = ?");
+        $stmt->execute([$table['id']]);
+
+        RealtimeNotifier::tableChanged((int) $table['id']);
+        Http::json($this->getTableState($db, (int) $table['id']));
     }
 
     // -------------------------------------------------------------------

@@ -50,6 +50,7 @@ export const api = {
     }),
   topupTable: (token, code, amount) =>
     request(`/tables/${code}/topup`, { method: 'POST', token, body: { amount } }),
+  closeTable: (token, code) => request(`/tables/${code}/close`, { method: 'POST', token }),
 
   getTransactions: (token) => request('/users/me/transactions', { token }),
   recharge: (token, amount) => request('/users/me/recharge', { method: 'POST', token, body: { amount } }),
