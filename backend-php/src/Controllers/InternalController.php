@@ -390,7 +390,44 @@ final class InternalController
             'ante_value' => Money::of($table['ante_value']),
             'status' => $table['status'],
             'created_by' => (int) $table['created_by'],
+            'next_dealer_id' => $this->nextDealerId($db, (int) $table['id']),
             'players' => $players,
         ]]);
+    }
+
+    /**
+     * Espejo de TableController::nextDealerId: a quién le toca repartir la
+     * próxima mano 1 de esta mesa (creador si nunca se jugó una mano, o el
+     * siguiente en la rotación de asientos después del último dealer).
+     */
+    private function nextDealerId(PDO $db, int $tableId): int
+    {
+        $stmt = $db->prepare(
+            "SELECT user_id FROM table_players WHERE table_id = ? AND status = 'active' ORDER BY seat_order ASC"
+        );
+        $stmt->execute([$tableId]);
+        $ids = array_map(static fn ($r) => (int) $r['user_id'], $stmt->fetchAll());
+
+        $stmt = $db->prepare(
+            'SELECT m.dealer_user_id FROM manos m
+             JOIN partidas p ON p.id = m.partida_id
+             WHERE p.table_id = ?
+             ORDER BY m.id DESC LIMIT 1'
+        );
+        $stmt->execute([$tableId]);
+        $lastMano = $stmt->fetch();
+
+        if ($lastMano === false) {
+            $stmt = $db->prepare('SELECT created_by FROM tables_ WHERE id = ?');
+            $stmt->execute([$tableId]);
+            return (int) $stmt->fetch()['created_by'];
+        }
+
+        if (count($ids) === 0) {
+            return (int) $lastMano['dealer_user_id'];
+        }
+
+        $lastIndex = array_search((int) $lastMano['dealer_user_id'], $ids, true);
+        return $lastIndex === false ? $ids[0] : $ids[($lastIndex + 1) % count($ids)];
     }
 }
