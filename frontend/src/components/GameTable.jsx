@@ -103,11 +103,6 @@ export default function GameTable({
           Mano {game.manoNumber ?? '-'}{' '}
           {game.isMandatory === null ? '' : game.isMandatory ? '(obligatoria)' : '(optativa)'}
         </div>
-        {game.trumpCard && (
-          <div className="trump-indicator">
-            Triunfo: <Card card={game.trumpCard} small /> <span>{SUIT_LABEL[game.trumpCard.suit]}</span>
-          </div>
-        )}
         {typeof game.fondo === 'number' && <div>Fondo acumulado: {formatMoney(game.fondo)}</div>}
         {!game.connected && <div className="achico-tag">Conectando en vivo...</div>}
       </div>
@@ -152,54 +147,66 @@ export default function GameTable({
         </div>
       )}
 
-      <div className="seats">
-        {game.seatOrder.map((userId) => (
-          <div
-            key={userId}
-            className={`seat ${game.turnUserId === userId ? 'seat-active' : ''} ${
-              game.eliminated.includes(userId) ? 'seat-eliminated' : ''
-            }`}
-          >
-            <div className="seat-name">
-              {usernameOf(userId)} {userId === game.dealerId && <span title="Dealer">🎴</span>}
+      <div className="round-table-wrap">
+        <div className="round-table">
+          <div className="table-center">
+            {game.trumpCard && (
+              <div className="center-trump">
+                <Card card={game.trumpCard} small />
+                <span>{SUIT_LABEL[game.trumpCard.suit]}</span>
+              </div>
+            )}
+            {game.lastTrickWinner && (
+              <p className="trick-winner-banner">
+                🏆 {usernameOf(game.lastTrickWinner)} ganó
+                {winningCard && (
+                  <>
+                    {' '}
+                    con <Card card={winningCard} small />
+                  </>
+                )}
+              </p>
+            )}
+            <div className="center-trick">
+              {game.trickPlays.length === 0 && game.phase === 'playing' && (
+                <p className="hint">Esperando la primera carta...</p>
+              )}
+              {game.trickPlays.map((play, i) => (
+                <div
+                  key={i}
+                  className={`trick-play ${game.lastTrickWinner === play.userId ? 'trick-play-winner' : ''}`}
+                >
+                  <Card card={play.card} small />
+                  <span>{usernameOf(play.userId)}</span>
+                  {play.isAchico && <span className="achico-tag">me achico</span>}
+                </div>
+              ))}
             </div>
-            <div className="seat-points">{game.points[userId] ?? 0} pts</div>
-            {(() => {
-              const status = seatStatus(userId);
-              return (
-                status && (
-                  <div className={`seat-tag ${status.isTurn ? 'seat-turn-label' : ''}`}>{status.text}</div>
-                )
-              );
-            })()}
-            {game.turnUserId === userId && <TurnTimer deadline={game.turnDeadline} />}
           </div>
-        ))}
-      </div>
+        </div>
 
-      {game.lastTrickWinner && (
-        <p className="trick-winner-banner">
-          🏆 {usernameOf(game.lastTrickWinner)} ganó esta baza
-          {winningCard && (
-            <>
-              {' '}
-              con <Card card={winningCard} small />
-            </>
-          )}
-        </p>
-      )}
-      <div className="trick-area">
-        {game.trickPlays.length === 0 && game.phase === 'playing' && <p>Esperando la primera carta de la baza...</p>}
-        {game.trickPlays.map((play, i) => (
-          <div
-            key={i}
-            className={`trick-play ${game.lastTrickWinner === play.userId ? 'trick-play-winner' : ''}`}
-          >
-            <Card card={play.card} />
-            <span>{usernameOf(play.userId)}</span>
-            {play.isAchico && <span className="achico-tag">me achico</span>}
-          </div>
-        ))}
+        {game.seatOrder.map((userId, i, seats) => {
+          const angle = -Math.PI / 2 + (2 * Math.PI * i) / seats.length;
+          const left = 50 + 39 * Math.cos(angle);
+          const top = 50 + 38 * Math.sin(angle);
+          const status = seatStatus(userId);
+          return (
+            <div
+              key={userId}
+              className={`seat round-seat ${game.turnUserId === userId ? 'seat-active' : ''} ${
+                game.eliminated.includes(userId) ? 'seat-eliminated' : ''
+              }`}
+              style={{ left: `${left}%`, top: `${top}%` }}
+            >
+              <div className="seat-name">
+                {usernameOf(userId)} {userId === game.dealerId && <span title="Dealer">🎴</span>}
+              </div>
+              <div className="seat-points">{game.points[userId] ?? 0} pts</div>
+              {status && <div className={`seat-tag ${status.isTurn ? 'seat-turn-label' : ''}`}>{status.text}</div>}
+              {game.turnUserId === userId && <TurnTimer deadline={game.turnDeadline} />}
+            </div>
+          );
+        })}
       </div>
 
       {game.phase === 'entry' && (

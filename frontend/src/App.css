@@ -191,33 +191,66 @@
   font-weight: 600;
 }
 
-.trump-indicator {
+.round-table-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 560 / 400;
+  margin: 0.5rem auto 2.5rem;
+}
+
+.round-table {
+  position: absolute;
+  inset: 12% 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, #1e7d43 0%, #16602f 100%);
+  border: 4px solid #0f4a24;
+}
+
+.table-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  color: #fff;
+  text-align: center;
+  width: 80%;
+}
+
+.center-trump {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.2rem;
+  gap: 0.5rem;
+  font-size: 0.95rem;
 }
 
-.trump-indicator .card {
-  width: 76px;
-  height: 106px;
-  font-size: 1.5rem;
-}
-
-.seats {
+.center-trick {
   display: flex;
+  gap: 0.75rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  justify-content: center;
+  min-height: 56px;
 }
 
 .seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: #fff;
   border: 1px solid rgba(128, 128, 128, 0.3);
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  min-width: 120px;
+  padding: 0.4rem 0.6rem;
+  min-width: 96px;
+  max-width: 132px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+  font-size: 0.85rem;
 }
 
 .seat-active {
@@ -245,18 +278,6 @@
 
 .turn-timer-urgent {
   color: #e5484d;
-}
-
-.trick-area {
-  min-height: 100px;
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-  padding: 1.25rem;
-  border-radius: 12px;
-  background: radial-gradient(ellipse at center, #1e7d43 0%, #16602f 100%);
-  border: 4px solid #0f4a24;
-  color: #fff;
 }
 
 .trick-winner-banner {
