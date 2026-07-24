@@ -2,6 +2,7 @@
 
 namespace Burro\Controllers;
 
+use Burro\AdminSettings;
 use Burro\Db;
 use Burro\Http;
 use Burro\Money;
@@ -391,6 +392,7 @@ final class InternalController
             'status' => $table['status'],
             'created_by' => (int) $table['created_by'],
             'next_dealer_id' => $this->nextDealerId($db, (int) $table['id']),
+            'min_players_per_partida' => AdminSettings::getInt('min_players_per_partida'),
             'players' => $players,
         ]]);
     }

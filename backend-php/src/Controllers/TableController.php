@@ -425,6 +425,7 @@ final class TableController
             'status' => $table['status'],
             'created_by' => (int) $table['created_by'],
             'next_dealer_id' => $this->nextDealerId($db, $tableId),
+            'min_players_per_partida' => AdminSettings::getInt('min_players_per_partida'),
             'players' => array_map(static fn ($p) => [
                 'user_id' => (int) $p['user_id'],
                 'username' => $p['username'],

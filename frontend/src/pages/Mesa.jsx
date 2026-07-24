@@ -131,6 +131,7 @@ export default function Mesa() {
   // quien decide cuántas manos son obligatorias (y arranca la partida) es a
   // quien le toca repartir la mano 1 según la rotación de asientos.
   const canStartPartida = table.next_dealer_id === user.id;
+  const minPlayers = table.min_players_per_partida ?? 3;
   const shareLink = `${window.location.origin}/#/mesa/${table.code}`;
 
   return (
@@ -216,10 +217,10 @@ export default function Mesa() {
               />
             </label>
             {startError && <p className="error">{startError}</p>}
-            <button type="submit" disabled={starting || table.players.length < 3}>
+            <button type="submit" disabled={starting || table.players.length < minPlayers}>
               {starting ? 'Iniciando...' : 'Iniciar partida'}
             </button>
-            {table.players.length < 3 && <p>Se necesitan al menos 3 jugadores.</p>}
+            {table.players.length < minPlayers && <p>Se necesitan al menos {minPlayers} jugadores.</p>}
           </form>
         </div>
       )}
