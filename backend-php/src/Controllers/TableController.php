@@ -258,12 +258,13 @@ final class TableController
         if ($table === false) {
             Http::error('No existe una mesa con ese código', 404);
         }
-        if ((int) $table['created_by'] !== (int) $claims['sub']) {
-            // Nota: para partidas después de la primera, el dealer de la mano 1 (elegido
-            // por rotación, calculado en la Fase 2) debería poder fijar este número, no
-            // solo el creador. Se deja simplificado aquí porque la rotación de dealer aún
-            // no existe sin el motor del juego.
-            Http::error('Solo el creador de la mesa puede iniciar la partida', 403);
+        // El primer dealer de la primera partida de una mesa es su creador; de ahí en
+        // adelante, quien decide cuántas manos son obligatorias es el dealer que le
+        // toca repartir la mano 1 de la nueva partida (rotación calculada igual que
+        // determineNextDealer en el motor de Node).
+        $requiredDealerId = $this->nextDealerId($db, (int) $table['id']);
+        if ($requiredDealerId !== (int) $claims['sub']) {
+            Http::error('Solo a quien le toca repartir la siguiente mano puede iniciar la partida', 403);
         }
         if ($table['status'] === 'playing') {
             Http::error('Ya hay una partida en curso en esta mesa', 409);
@@ -347,6 +348,44 @@ final class TableController
         $stmt->execute([$userId, $tableId, -$buyIn, $tableId]);
     }
 
+    /**
+     * A quién le toca repartir la próxima mano 1 de esta mesa (mismo cálculo que
+     * InternalController::nextDealer, que usa Node para la rotación dentro de una
+     * partida): si nunca se jugó una mano en esta mesa, es el creador; si ya se
+     * jugó alguna, es el siguiente en la rotación de asientos después del último
+     * dealer que repartió.
+     */
+    private function nextDealerId(PDO $db, int $tableId): int
+    {
+        $stmt = $db->prepare(
+            "SELECT user_id FROM table_players WHERE table_id = ? AND status = 'active' ORDER BY seat_order ASC"
+        );
+        $stmt->execute([$tableId]);
+        $ids = array_map(static fn ($r) => (int) $r['user_id'], $stmt->fetchAll());
+
+        $stmt = $db->prepare(
+            'SELECT m.dealer_user_id FROM manos m
+             JOIN partidas p ON p.id = m.partida_id
+             WHERE p.table_id = ?
+             ORDER BY m.id DESC LIMIT 1'
+        );
+        $stmt->execute([$tableId]);
+        $lastMano = $stmt->fetch();
+
+        if ($lastMano === false) {
+            $stmt = $db->prepare('SELECT created_by FROM tables_ WHERE id = ?');
+            $stmt->execute([$tableId]);
+            return (int) $stmt->fetch()['created_by'];
+        }
+
+        if (count($ids) === 0) {
+            return (int) $lastMano['dealer_user_id'];
+        }
+
+        $lastIndex = array_search((int) $lastMano['dealer_user_id'], $ids, true);
+        return $lastIndex === false ? $ids[0] : $ids[($lastIndex + 1) % count($ids)];
+    }
+
     private function generateUniqueCode(PDO $db): string
     {
         do {
@@ -385,6 +424,7 @@ final class TableController
             'ante_value' => Money::of($table['ante_value']),
             'status' => $table['status'],
             'created_by' => (int) $table['created_by'],
+            'next_dealer_id' => $this->nextDealerId($db, $tableId),
             'players' => array_map(static fn ($p) => [
                 'user_id' => (int) $p['user_id'],
                 'username' => $p['username'],

@@ -93,7 +93,11 @@ export class ManoRuntime extends EventEmitter {
     const forced = isDealer && this.entrants.length === 0;
     const finalDecision = forced || chosenEntered;
 
+    // this.nonEntrants se llena aquí mismo (no solo al final de la fase) para
+    // que quien esté viendo la mesa vea "no entró" apenas cada quien decide,
+    // en vez de recién cuando termina toda la ronda de decisiones.
     if (finalDecision) this.entrants.push(userId);
+    else this.nonEntrants.push(userId);
     this.emit('entryDecided', { userId, entered: finalDecision, forced });
     this._advanceEntryTurn();
   }
@@ -101,7 +105,6 @@ export class ManoRuntime extends EventEmitter {
   _advanceEntryTurn() {
     this.turnIndex += 1;
     if (this.turnIndex >= this.turnQueue.length) {
-      this.nonEntrants = this.seatOrderFromDealerRight.filter((id) => !this.entrants.includes(id));
       for (const id of this.nonEntrants) {
         this.shoe = collectManoCards(this.shoe, this.allHands[id]);
       }
@@ -310,6 +313,7 @@ export class ManoRuntime extends EventEmitter {
       seatOrder: this.seatOrderFromDealerRight,
       entrants: this.entrants,
       nonEntrants: this.nonEntrants,
+      exchangedCounts: this.exchangedCounts,
       turnUserId: this.currentTurnUserId,
       turnDeadline: this.turnDeadline,
       currentTrick:

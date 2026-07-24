@@ -69,6 +69,15 @@ final class InternalController
         $stmt->execute([$tableId]);
         $partida = $stmt->fetch();
 
+        if ($partida !== false) {
+            // Sin este cast, PDO devuelve las columnas DECIMAL como string y
+            // Node/el frontend terminaban recibiendo "10.00" en vez de 10 —
+            // eso hacía que `typeof fondo === 'number'` fallara y el fondo
+            // dejara de mostrarse en la mesa durante la primera mano.
+            $partida['ante_value'] = Money::of($partida['ante_value']);
+            $partida['fondo_acumulado'] = Money::of($partida['fondo_acumulado']);
+        }
+
         Http::json(['partida' => $partida !== false ? $partida : null]);
     }
 

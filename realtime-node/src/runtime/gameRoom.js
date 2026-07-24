@@ -140,6 +140,11 @@ export class GameRoom {
     const partidaRow = await getActivePartida(this.tableId);
     this.partida.fondo = partidaRow.fondo_acumulado;
 
+    // Recién se les cobró la apuesta inicial a todos: que la sala de espera
+    // (si alguien la sigue viendo) refleje el nuevo saldo de cada uno, en vez
+    // de esperar a que la mano entera termine.
+    await this._notifyLobby();
+
     const maxExchange = await getAdminSetting('max_card_exchange');
     const turnTimeoutSeconds = await getAdminSetting('turn_timeout_seconds');
 

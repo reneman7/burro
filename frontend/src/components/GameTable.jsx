@@ -8,7 +8,13 @@ import { formatMoney } from '../utils/money';
 
 const SUIT_LABEL = { diamantes: 'Diamantes', espadas: 'Espadas', corazones: 'Corazones', treboles: 'Tréboles' };
 
-export default function GameTable({ table, currentUserId, isCreator, onPartidaFinished, onNewPartida }) {
+const PHASE_ACTION_LABEL = {
+  entry: 'decidiendo si entra',
+  exchange: 'cambiando cartas',
+  playing: 'pensando qué carta tirar',
+};
+
+export default function GameTable({ table, currentUserId, canStartPartida, onPartidaFinished, onNewPartida }) {
   const { token, refreshUser } = useAuth();
   const game = useGameSocket(table.id);
   const [selectedToDiscard, setSelectedToDiscard] = useState([]);
@@ -46,7 +52,8 @@ export default function GameTable({ table, currentUserId, isCreator, onPartidaFi
   }
 
   function playCard(index) {
-    if (!game.myTurn?.validIndexes.includes(index)) return;
+    // No se bloquea ninguna carta: si no es una jugada válida, el servidor
+    // la rechaza y la resuelve como renuncia, en vez de impedir el clic.
     game.playCard(index);
   }
 
@@ -84,6 +91,12 @@ export default function GameTable({ table, currentUserId, isCreator, onPartidaFi
       {game.serverError && (
         <div className="banner banner-warning">
           <p>{game.serverError}</p>
+        </div>
+      )}
+
+      {isMyTurn && PHASE_ACTION_LABEL[game.phase] && (
+        <div className="banner banner-your-turn">
+          <p>¡Es tu turno! Estás {PHASE_ACTION_LABEL[game.phase]}.</p>
         </div>
       )}
 
@@ -127,9 +140,24 @@ export default function GameTable({ table, currentUserId, isCreator, onPartidaFi
               {usernameOf(userId)} {userId === game.dealerId && <span title="Dealer">🎴</span>}
             </div>
             <div className="seat-points">{game.points[userId] ?? 0} pts</div>
+            {game.entrants.includes(userId) && !game.eliminated.includes(userId) && (
+              <div className="seat-tag seat-tag-ok">Entró</div>
+            )}
             {game.nonEntrants.includes(userId) && <div className="seat-tag">No entró</div>}
             {game.eliminated.includes(userId) && <div className="seat-tag">Renunció</div>}
-            {game.turnUserId === userId && <TurnTimer deadline={game.turnDeadline} />}
+            {typeof game.exchangedCounts?.[userId] === 'number' && (
+              <div className="seat-tag">
+                {game.exchangedCounts[userId] > 0
+                  ? `Cambió ${game.exchangedCounts[userId]} carta(s)`
+                  : 'No cambió cartas'}
+              </div>
+            )}
+            {game.turnUserId === userId && (
+              <>
+                <div className="seat-tag seat-turn-label">{PHASE_ACTION_LABEL[game.phase] ?? 'en turno'}</div>
+                <TurnTimer deadline={game.turnDeadline} />
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -196,14 +224,7 @@ export default function GameTable({ table, currentUserId, isCreator, onPartidaFi
                 );
               }
               if (game.phase === 'playing' && isMyTurn) {
-                return (
-                  <Card
-                    key={cardKey}
-                    card={card}
-                    selectable={game.myTurn?.validIndexes.includes(i)}
-                    onClick={() => playCard(i)}
-                  />
-                );
+                return <Card key={cardKey} card={card} selectable onClick={() => playCard(i)} />;
               }
               return <Card key={cardKey} card={card} selectable={false} />;
             })}
@@ -266,12 +287,12 @@ export default function GameTable({ table, currentUserId, isCreator, onPartidaFi
           {game.partidaResult.payoutPerWinner > 0 && (
             <p>Cada uno recibió: {formatMoney(game.partidaResult.payoutPerWinner)}</p>
           )}
-          {isCreator ? (
+          {canStartPartida ? (
             <div className="action-row">
               <button onClick={() => onNewPartida?.()}>Nueva partida</button>
             </div>
           ) : (
-            <p>Esperando a que el creador de la mesa arranque una nueva partida...</p>
+            <p>Esperando a que se arranque una nueva partida...</p>
           )}
         </div>
       )}

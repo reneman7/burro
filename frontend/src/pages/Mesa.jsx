@@ -127,6 +127,10 @@ export default function Mesa() {
 
   const isMember = table.players.some((p) => p.user_id === user.id);
   const isCreator = table.created_by === user.id;
+  // El primer dealer de la primera partida es el creador; de ahí en adelante,
+  // quien decide cuántas manos son obligatorias (y arranca la partida) es a
+  // quien le toca repartir la mano 1 según la rotación de asientos.
+  const canStartPartida = table.next_dealer_id === user.id;
   const shareLink = `${window.location.origin}/#/mesa/${table.code}`;
 
   return (
@@ -193,7 +197,13 @@ export default function Mesa() {
             {anteError && <p className="error">{anteError}</p>}
             <button type="submit">Actualizar apuesta</button>
           </form>
+        </div>
+      )}
 
+      {canStartPartida && table.status === 'waiting' && (
+        <div className="panel">
+          <h2>Iniciar partida</h2>
+          <p className="hint">Te toca repartir la mano 1: tú decides cuántas manos son obligatorias.</p>
           <form onSubmit={handleStart}>
             <label>
               Manos obligatorias
@@ -218,7 +228,7 @@ export default function Mesa() {
         <GameTable
           table={table}
           currentUserId={user.id}
-          isCreator={isCreator}
+          canStartPartida={canStartPartida}
           onPartidaFinished={() => setShowingPartidaEnd(true)}
           onNewPartida={() => setShowingPartidaEnd(false)}
         />

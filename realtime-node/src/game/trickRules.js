@@ -2,25 +2,19 @@ import { rankValue } from './deck.js';
 
 /**
  * Calcula qué cartas de `hand` son jugadas válidas dado el estado actual de
- * la baza. Reglas (validadas exhaustivamente con el diseño del juego):
+ * la baza.
  *
  * - Si el jugador lidera la baza (ledSuit === null): cualquier carta es válida.
- * - Si aún no se ha bajado ningún triunfo en esta baza:
- *     - Si tiene cartas del palo pedido: SOLO esas son válidas (sigue palo
- *       obligatorio; no puede triunfar voluntariamente teniendo el palo).
- *     - Si no tiene el palo pedido pero sí tiene triunfo(s): SOLO los
- *       triunfos son válidos (debe triunfar, cualquiera de sus triunfos).
- *     - Si no tiene ni el palo pedido ni triunfo: cualquier carta es válida
- *       (no hay "me achico" aquí, es simplemente libre porque no puede hacer
- *       otra cosa).
- * - Si ya se bajó un triunfo en esta baza:
- *     - Válidas = (sus cartas del palo pedido) ∪ (sus triunfos que superen
- *       al triunfo más alto ya jugado). Puede elegir cualquiera de las dos
- *       categorías si tiene ambas.
- *     - Si ese conjunto queda vacío: "me achico", cualquier carta es válida.
- *       Si el conjunto NO está vacío pero el jugador juega otra carta fuera
- *       de él, eso es una renuncia (se maneja fuera de este módulo, al
- *       rechazar la jugada).
+ * - Si tiene cartas del palo pedido: SOLO esas son válidas (sigue palo
+ *   obligatorio, aunque no superen nada; jugar otra cosa teniendo el palo
+ *   pedido es renuncia, manejada fuera de este módulo al rechazar la jugada).
+ * - Si NO tiene el palo pedido: libertad total, cualquier carta de la mano es
+ *   válida (nunca es obligatorio triunfar, ni antes ni después de que alguien
+ *   ya haya triunfado en la baza).
+ * - "Me achico" es solo una etiqueta informativa (no restringe nada): se
+ *   marca cuando el jugador no tiene el palo pedido, ya se jugó un triunfo en
+ *   la baza, tiene triunfo(s) en mano, pero ninguno supera al más alto ya
+ *   jugado.
  *
  * @param {object[]} hand
  * @param {{ ledSuit: string|null, trumpPlayed: boolean, highestTrumpRank: string|null }} trickState
@@ -29,35 +23,22 @@ import { rankValue } from './deck.js';
  */
 export function getValidPlays(hand, trickState, trumpSuit) {
   const { ledSuit, trumpPlayed, highestTrumpRank } = trickState;
+  const allIndexes = hand.map((_, i) => i);
 
   if (ledSuit === null) {
-    return { validIndexes: hand.map((_, i) => i), isAchico: false };
+    return { validIndexes: allIndexes, isAchico: false };
   }
 
   const ledSuitIndexes = indexesWhere(hand, (c) => c.suit === ledSuit);
+  if (ledSuitIndexes.length > 0) {
+    return { validIndexes: ledSuitIndexes, isAchico: false };
+  }
+
   const trumpIndexes = indexesWhere(hand, (c) => c.suit === trumpSuit);
+  const hasBeatingTrump = trumpPlayed && trumpIndexes.some((i) => rankValue(hand[i].rank) > rankValue(highestTrumpRank));
+  const isAchico = trumpPlayed && trumpIndexes.length > 0 && !hasBeatingTrump;
 
-  if (!trumpPlayed) {
-    if (ledSuitIndexes.length > 0) {
-      return { validIndexes: ledSuitIndexes, isAchico: false };
-    }
-    if (trumpIndexes.length > 0) {
-      return { validIndexes: trumpIndexes, isAchico: false };
-    }
-    return { validIndexes: hand.map((_, i) => i), isAchico: false };
-  }
-
-  const higherTrumpIndexes = indexesWhere(
-    hand,
-    (c) => c.suit === trumpSuit && rankValue(c.rank) > rankValue(highestTrumpRank)
-  );
-  const validIndexes = [...new Set([...ledSuitIndexes, ...higherTrumpIndexes])];
-
-  if (validIndexes.length === 0) {
-    return { validIndexes: hand.map((_, i) => i), isAchico: true };
-  }
-
-  return { validIndexes, isAchico: false };
+  return { validIndexes: allIndexes, isAchico };
 }
 
 /**
