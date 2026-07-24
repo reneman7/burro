@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import Card from './Card';
+import Card, { SUIT_SYMBOL } from './Card';
 import TurnTimer from './TurnTimer';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useAuth } from '../context/AuthContext';
@@ -68,6 +68,10 @@ export default function GameTable({
       return { text: PHASE_ACTION_LABEL[game.phase], isTurn: true };
     }
     if (game.eliminated.includes(userId)) return { text: 'Renunció' };
+    if (game.phase === 'playing' && game.lastPlayedByUser?.[userId]) {
+      const card = game.lastPlayedByUser[userId];
+      return { text: `Bajó ${card.rank}${SUIT_SYMBOL[card.suit] ?? ''}` };
+    }
     if (typeof game.exchangedCounts?.[userId] === 'number') {
       const n = game.exchangedCounts[userId];
       return { text: n > 0 ? `Cambió ${n} carta(s)` : 'No cambió cartas' };
@@ -147,6 +151,26 @@ export default function GameTable({
                     </span>
                   ))}
                 </div>
+                {m.tricks.length > 0 && (
+                  <div className="mano-history-tricks">
+                    {m.tricks.map((t) => (
+                      <div key={t.trick_number} className="mano-history-trick">
+                        <span className="hint">B{t.trick_number}</span>
+                        {t.plays.map((p) => (
+                          <span
+                            key={p.user_id}
+                            className={`mano-history-play ${
+                              t.winner_user_id === p.user_id ? 'mano-history-play-winner' : ''
+                            }`}
+                            title={p.username}
+                          >
+                            <Card card={p.card} small />
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

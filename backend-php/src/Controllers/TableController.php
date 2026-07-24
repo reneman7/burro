@@ -244,11 +244,50 @@ final class TableController
             ];
         }
 
+        $stmt = $db->prepare(
+            "SELECT t.mano_id, t.trick_number, t.winner_user_id, tp.user_id, u.username, tp.card, tp.play_order
+             FROM tricks t
+             JOIN trick_plays tp ON tp.trick_id = t.id
+             JOIN users u ON u.id = tp.user_id
+             WHERE t.mano_id IN ($placeholders)
+             ORDER BY t.trick_number ASC, tp.play_order ASC"
+        );
+        $stmt->execute($manoIds);
+
+        $tricksByMano = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $manoId = (int) $row['mano_id'];
+            $trickNumber = (int) $row['trick_number'];
+            if (!isset($tricksByMano[$manoId][$trickNumber])) {
+                $tricksByMano[$manoId][$trickNumber] = [
+                    'trick_number' => $trickNumber,
+                    'winner_user_id' => (int) $row['winner_user_id'],
+                    'plays' => [],
+                ];
+            }
+            $tricksByMano[$manoId][$trickNumber]['plays'][] = [
+                'user_id' => (int) $row['user_id'],
+                'username' => $row['username'],
+                'card' => self::decodeCard($row['card']),
+            ];
+        }
+
         Http::json(['manos' => array_map(static fn ($m) => [
             'mano_number' => (int) $m['mano_number'],
             'is_mandatory' => (bool) $m['is_mandatory'],
             'players' => $playersByMano[(int) $m['id']] ?? [],
+            'tricks' => array_values($tricksByMano[(int) $m['id']] ?? []),
         ], $manos)]);
+    }
+
+    /** @return array{rank:string,suit:string} */
+    private static function decodeCard(string $code): array
+    {
+        $suitMap = ['D' => 'diamantes', 'E' => 'espadas', 'C' => 'corazones', 'T' => 'treboles'];
+        return [
+            'rank' => substr($code, 0, -1),
+            'suit' => $suitMap[substr($code, -1)] ?? substr($code, -1),
+        ];
     }
 
     public function list(): never

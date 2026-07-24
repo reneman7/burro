@@ -255,6 +255,7 @@
 
 .seat-active {
   border-color: #2b8aef;
+  background: #ddeeff;
   box-shadow: 0 0 0 2px rgba(43, 138, 239, 0.3);
 }
 
@@ -304,6 +305,45 @@
   font-size: 0.8rem;
   font-style: italic;
   color: #e08e0b;
+}
+
+@media (max-width: 480px) {
+  .round-table-wrap {
+    aspect-ratio: 380 / 480;
+  }
+
+  .seat {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.3rem;
+    min-width: 58px;
+    max-width: 76px;
+    gap: 0.05rem;
+  }
+
+  .seat-name {
+    line-height: 1.1;
+  }
+
+  .seat-tag {
+    font-size: 0.58rem;
+    line-height: 1.1;
+  }
+
+  .table-center {
+    gap: 0.2rem;
+  }
+
+  .center-trump,
+  .center-trick {
+    gap: 0.4rem;
+  }
+
+  .center-trump .card,
+  .center-trick .card {
+    width: 30px;
+    height: 42px;
+    font-size: 0.6rem;
+  }
 }
 
 .my-hand {
@@ -416,6 +456,35 @@
 .mano-history-chip.chip-danger {
   background: rgba(229, 72, 77, 0.15);
   color: #cf222e;
+}
+
+.mano-history-tricks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed rgba(128, 128, 128, 0.25);
+}
+
+.mano-history-trick {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mano-history-trick .hint {
+  min-width: 22px;
+}
+
+.mano-history-play .card {
+  width: 28px;
+  height: 40px;
+  font-size: 0.65rem;
+}
+
+.mano-history-play-winner .card {
+  outline: 2px solid #2ecc71;
 }
 
 .tx-table {

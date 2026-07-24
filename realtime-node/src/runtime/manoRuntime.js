@@ -168,6 +168,16 @@ export class ManoRuntime extends EventEmitter {
     this.points = Object.fromEntries(this.entrants.map((id) => [id, 0]));
     this.leaderId = this.entrants[0];
     for (const id of this.entrants) this.emit('handUpdated', { userId: id, hand: this.hands[id] });
+
+    if (this.entrants.length === 1) {
+      // Con un solo entrante no hay contra quién competir cada baza: se
+      // salva automático (5 de 5) sin obligarlo a tirar sus cartas una por
+      // una para un resultado que ya está decidido.
+      this.points[this.entrants[0]] = 5;
+      this._finishMano();
+      return;
+    }
+
     this._beginTrick();
   }
 

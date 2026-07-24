@@ -35,6 +35,10 @@ export function useGameSocket(tableId) {
   const [myTurn, setMyTurn] = useState(null); // { validIndexes, isAchico }
   const [trickPlays, setTrickPlays] = useState([]);
   const [lastTrickWinner, setLastTrickWinner] = useState(null);
+  // Última carta que bajó cada jugador durante la fase de bazas, para que su
+  // etiqueta de estado muestre eso en vez de quedarse pegada en "cambió N
+  // cartas" (que ya no aplica una vez que empieza a jugar).
+  const [lastPlayedByUser, setLastPlayedByUser] = useState({});
   // Mientras está "congelada" se sigue mostrando la última baza completa (con
   // quién y con qué carta ganó) hasta que de verdad empiece la siguiente
   // (llegue la primera carta jugada de esa nueva baza). Un ref porque los
@@ -66,12 +70,14 @@ export function useGameSocket(tableId) {
       frozenRef.current = false;
       setTrickPlays([]);
       setLastTrickWinner(null);
+      setLastPlayedByUser({});
       setMyTurn(null);
     };
 
     const onYourHand = ({ hand }) => setMyHand(hand);
     const onYourTurn = ({ validIndexes, isAchico }) => setMyTurn({ validIndexes, isAchico });
     const onCardPlayed = (play) => {
+      setLastPlayedByUser((prev) => ({ ...prev, [play.userId]: play.card }));
       if (frozenRef.current) {
         // Esta es la primera carta de la baza nueva: recién ahora se limpia
         // la anterior, que se mantuvo visible todo el tiempo que hizo falta.
@@ -174,6 +180,7 @@ export function useGameSocket(tableId) {
     myTurn,
     trickPlays,
     lastTrickWinner,
+    lastPlayedByUser,
     connected,
     startPartida,
     decideEntry,
