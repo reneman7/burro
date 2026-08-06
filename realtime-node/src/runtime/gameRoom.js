@@ -84,6 +84,16 @@ export class GameRoom {
     const activePartida = await getActivePartida(this.tableId);
     if (!activePartida) return; // mesa realmente en 'waiting', no hay nada que recuperar
 
+    // Ojo: que exista una partida activa en la DB NO significa que el estado
+    // en memoria se haya perdido -- es exactamente lo mismo justo después de
+    // crearla por REST, antes de que el creador dispare game:startPartida
+    // (ventana normal, no huérfana). Solo hay algo que recuperar si YA se
+    // había repartido al menos una mano (terminada o a medias); si no, se
+    // deja que el game:startPartida normal siga su curso y reparta la mano 1.
+    const manoCount = await countManosInPartida(activePartida.id);
+    const unfinished = await getUnfinishedMano(activePartida.id);
+    if (manoCount === 0 && !unfinished) return;
+
     const seatOrder = await getSeatOrder(this.tableId);
     this.partida = {
       id: activePartida.id,
@@ -94,7 +104,6 @@ export class GameRoom {
       seatOrderIds: seatOrder.map((p) => p.user_id),
     };
 
-    const unfinished = await getUnfinishedMano(this.partida.id);
     if (unfinished) {
       await refundMano({
         tableId: this.tableId,
