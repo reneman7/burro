@@ -70,10 +70,12 @@ $paramRoutes = [
     'GET #^/api/internal/tables/([0-9]+)/balances$#' => [InternalController::class, 'tableBalances'],
     'GET #^/api/internal/tables/([0-9]+)/state$#' => [InternalController::class, 'tableState'],
     'GET #^/api/internal/partidas/([0-9]+)/mano-count$#' => [InternalController::class, 'manoCount'],
+    'GET #^/api/internal/partidas/([0-9]+)/unfinished-mano$#' => [InternalController::class, 'unfinishedMano'],
     'POST #^/api/internal/manos/([0-9]+)/finalize$#' => [InternalController::class, 'finalizeMano'],
     'POST #^/api/internal/manos/([0-9]+)/players$#' => [InternalController::class, 'insertManoPlayers'],
     'POST #^/api/internal/manos/([0-9]+)/tricks$#' => [InternalController::class, 'insertTricks'],
     'POST #^/api/internal/manos/([0-9]+)/apply-payments$#' => [InternalController::class, 'applyManoPayments'],
+    'POST #^/api/internal/manos/([0-9]+)/refund$#' => [InternalController::class, 'refundMano'],
     'POST #^/api/internal/partidas/([0-9]+)/charge-ante$#' => [InternalController::class, 'chargeAnte'],
     'POST #^/api/internal/partidas/([0-9]+)/finalize$#' => [InternalController::class, 'finalizePartida'],
 ];

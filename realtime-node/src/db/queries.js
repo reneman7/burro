@@ -80,6 +80,31 @@ export async function getTableBalances(tableId) {
 }
 
 /**
+ * La mano que quedó a medio repartir/jugar si el servicio de Node se
+ * reinició (deploy, o que Render lo duerma en el plan gratis) mientras una
+ * partida estaba en curso — el estado de esa mano (manos, mazo, turno) solo
+ * vivía en memoria y se perdió, aunque la fila en `manos` sí quedó grabada
+ * (con estado != 'finished', porque nunca llegó a `finalizeManoRow`).
+ */
+export async function getUnfinishedMano(partidaId) {
+  const { mano } = await internalApi.get(`/internal/partidas/${partidaId}/unfinished-mano`);
+  return mano;
+}
+
+/**
+ * Deshace una mano que quedó a medias por el reinicio: le devuelve la
+ * apuesta ya cobrada a todos y borra la fila (para no dejar un hueco raro
+ * en la numeración ni un cobro sin su mano correspondiente).
+ */
+export async function refundMano({ tableId, manoId, seatOrderIds, anteValue }) {
+  await internalApi.post(`/internal/manos/${manoId}/refund`, {
+    table_id: tableId,
+    seat_order_ids: seatOrderIds,
+    ante_value: anteValue,
+  });
+}
+
+/**
  * Reparte el fondo acumulado (fin de partida) entre los salvados de la última
  * mano y cierra la partida. Devuelve lo que efectivamente le tocó a cada
  * salvado (PHP hace la división en centavos), para no recalcularlo por

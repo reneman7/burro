@@ -124,6 +124,24 @@ final class InternalController
         Http::json(['count' => (int) $stmt->fetch()['n']]);
     }
 
+    /**
+     * La mano (si hay alguna) que se quedó a medias porque el servicio de
+     * Node se reinició antes de terminarla: nunca llegó a `finalizeMano`, así
+     * que su estado sigue en 'dealing' en vez de 'finished'.
+     */
+    public function unfinishedMano(string $partidaId): never
+    {
+        Http::requireInternalAuth();
+
+        $stmt = Db::get()->prepare(
+            "SELECT * FROM manos WHERE partida_id = ? AND status != 'finished' ORDER BY id DESC LIMIT 1"
+        );
+        $stmt->execute([$partidaId]);
+        $mano = $stmt->fetch();
+
+        Http::json(['mano' => $mano !== false ? $mano : null]);
+    }
+
     public function createMano(): never
     {
         Http::requireInternalAuth();
@@ -249,6 +267,56 @@ final class InternalController
 
             $db->prepare('UPDATE partidas SET fondo_acumulado = ? WHERE id = ?')
                 ->execute([$payments['newFondo'], $partidaId]);
+
+            $db->commit();
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            throw $e;
+        }
+
+        Http::json(['ok' => true]);
+    }
+
+    /**
+     * Deshace una mano que se quedó a medias por el reinicio del servicio de
+     * Node: le devuelve la apuesta ya cobrada a todos y borra la fila, para
+     * repartirla de nuevo desde cero sin cobrarla dos veces ni dejar un
+     * hueco en la numeración.
+     */
+    public function refundMano(string $manoId): never
+    {
+        Http::requireInternalAuth();
+        $body = Http::body();
+        $db = Db::get();
+        $tableId = $body['table_id'];
+        $seatOrderIds = $body['seat_order_ids'];
+        $anteValue = Money::of($body['ante_value']);
+
+        $stmt = $db->prepare('SELECT partida_id FROM manos WHERE id = ?');
+        $stmt->execute([$manoId]);
+        $mano = $stmt->fetch();
+        if ($mano === false) {
+            Http::json(['ok' => true]); // ya no existe, nada que deshacer
+        }
+
+        $db->beginTransaction();
+        try {
+            foreach ($seatOrderIds as $userId) {
+                $db->prepare(
+                    'UPDATE table_players SET table_balance = table_balance + ? WHERE table_id = ? AND user_id = ?'
+                )->execute([$anteValue, $tableId, $userId]);
+                $db->prepare(
+                    "INSERT INTO credit_transactions (user_id, table_id, amount, type, reference_id) VALUES (?, ?, ?, 'admin_adjust', ?)"
+                )->execute([$userId, $tableId, $anteValue, $manoId]);
+            }
+
+            $db->prepare('UPDATE partidas SET fondo_acumulado = fondo_acumulado - ? WHERE id = ?')
+                ->execute([$anteValue * count($seatOrderIds), $mano['partida_id']]);
+
+            // No queda ninguna otra fila hija todavía (mano_players/tricks
+            // solo se insertan al TERMINAR una mano), así que borrar la fila
+            // de `manos` no deja nada huérfano.
+            $db->prepare('DELETE FROM manos WHERE id = ?')->execute([$manoId]);
 
             $db->commit();
         } catch (\Throwable $e) {

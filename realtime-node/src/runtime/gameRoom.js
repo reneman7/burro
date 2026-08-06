@@ -14,6 +14,8 @@ import {
   getTableBalances,
   finalizePartida,
   getAdminSetting,
+  getUnfinishedMano,
+  refundMano,
 } from '../db/queries.js';
 import { roomName as lobbyRoomName, loadTableState } from '../sockets/lobby.js';
 
@@ -45,10 +47,68 @@ export class GameRoom {
     return `game:${this.tableId}`;
   }
 
-  registerSocket(userId, socket) {
+  async registerSocket(userId, socket) {
     this.sockets.set(userId, socket);
     socket.join(this.roomName());
+    await this._rehydrateIfNeeded();
     this._sendFullStateTo(userId);
+  }
+
+  /**
+   * Este GameRoom vive solo en memoria: si el servicio de Node se reinicia
+   * (cada deploy, o que Render lo duerma en el plan gratis tras inactividad)
+   * mientras una mesa tenía una partida en curso, `registry.js` crea un
+   * GameRoom nuevo y vacío (this.partida = null) la próxima vez que alguien
+   * se conecta — aunque en la base de datos la mesa siga en 'playing'. Sin
+   * esto, esa partida quedaba congelada en silencio para siempre: no había
+   * mano que repartir, y cada jugada/decisión se perdía sin avisar a nadie
+   * (this.mano?.playCard(...) simplemente no hacía nada).
+   *
+   * Reconstruye lo que SÍ persiste (la partida: fondo, apuesta, manos
+   * obligatorias) y, si había una mano a medio jugar cuando se perdió el
+   * estado, le devuelve la apuesta a todos y la reparte de nuevo desde cero
+   * (las manos de cada jugador y el mazo exacto nunca se guardan en la base
+   * de datos, así que no hay forma de retomarla exactamente donde quedó).
+   */
+  async _rehydrateIfNeeded() {
+    if (this.partida) return;
+    if (!this._rehydratePromise) {
+      this._rehydratePromise = this._doRehydrate().finally(() => {
+        this._rehydratePromise = null;
+      });
+    }
+    await this._rehydratePromise;
+  }
+
+  async _doRehydrate() {
+    const activePartida = await getActivePartida(this.tableId);
+    if (!activePartida) return; // mesa realmente en 'waiting', no hay nada que recuperar
+
+    const seatOrder = await getSeatOrder(this.tableId);
+    this.partida = {
+      id: activePartida.id,
+      anteValue: activePartida.ante_value,
+      mandatoryManos: activePartida.mandatory_manos,
+      fondo: activePartida.fondo_acumulado,
+      shoe: createShoe(),
+      seatOrderIds: seatOrder.map((p) => p.user_id),
+    };
+
+    const unfinished = await getUnfinishedMano(this.partida.id);
+    if (unfinished) {
+      await refundMano({
+        tableId: this.tableId,
+        manoId: unfinished.id,
+        seatOrderIds: this.partida.seatOrderIds,
+        anteValue: this.partida.anteValue,
+      });
+      this.broadcastPublic('game:error', {
+        message:
+          'El servidor se reinició mientras esta mano estaba en curso. Se devolvió la apuesta a todos y se reparte de nuevo.',
+      });
+    }
+
+    await this._dealNextMano();
   }
 
   unregisterSocket(userId, socket) {
@@ -351,15 +411,18 @@ export class GameRoom {
   // ------------------------------------------------------------------
 
   handleDecideEntry(userId, entered) {
-    this.mano?.decideEntry(userId, entered);
+    if (!this.mano) throw new Error('No hay una mano activa en este momento. Recarga la página.');
+    this.mano.decideEntry(userId, entered);
   }
 
   handleExchange(userId, discardIndexes) {
-    this.mano?.exchange(userId, discardIndexes);
+    if (!this.mano) throw new Error('No hay una mano activa en este momento. Recarga la página.');
+    this.mano.exchange(userId, discardIndexes);
   }
 
   handlePlayCard(userId, cardIndex) {
-    this.mano?.playCard(userId, cardIndex);
+    if (!this.mano) throw new Error('No hay una mano activa en este momento. Recarga la página.');
+    this.mano.playCard(userId, cardIndex);
   }
 
   /**

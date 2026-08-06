@@ -12,10 +12,10 @@ export function registerGameHandlers(io, socket) {
 
   // El cliente llama esto al entrar a la pantalla de una mesa (incluida la
   // reconexión): se registra para recibir el estado y su mano privada.
-  socket.on('game:watch', (tableId, ack) => {
+  socket.on('game:watch', async (tableId, ack) => {
     try {
       const room = getOrCreateGameRoom(io, Number(tableId));
-      room.registerSocket(userId, socket);
+      await room.registerSocket(userId, socket);
       if (typeof ack === 'function') ack({ ok: true });
     } catch (err) {
       if (typeof ack === 'function') ack({ ok: false, error: err.message });
