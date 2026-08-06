@@ -57,6 +57,11 @@ export default function GameTable({
     return (userId) => map[userId] ?? `#${userId}`;
   }, [table.players]);
 
+  const balanceOf = useMemo(() => {
+    const map = Object.fromEntries(table.players.map((p) => [p.user_id, p.table_balance]));
+    return (userId) => map[userId];
+  }, [table.players]);
+
   const isMyTurn = game.turnUserId === currentUserId;
   const iAmEntrant = game.entrants.includes(currentUserId);
   const winningCard = game.trickPlays.find((p) => p.userId === game.lastTrickWinner)?.card;
@@ -215,66 +220,72 @@ export default function GameTable({
         </div>
       )}
 
-      <div className="round-table-wrap">
-        <div className="round-table">
-          <div className="table-center">
-            {game.trumpCard && (
-              <div className="center-trump">
-                <Card card={game.trumpCard} small />
-                <span>{SUIT_LABEL[game.trumpCard.suit]}</span>
-              </div>
-            )}
-            {game.lastTrickWinner && (
-              <p className="trick-winner-banner">
-                🏆 {usernameOf(game.lastTrickWinner)} ganó
-                {winningCard && (
-                  <>
-                    {' '}
-                    con <Card card={winningCard} small />
-                  </>
-                )}
-              </p>
-            )}
-            <div className="center-trick">
-              {game.trickPlays.length === 0 && game.phase === 'playing' && (
-                <p className="hint">Esperando la primera carta...</p>
-              )}
-              {game.trickPlays.map((play, i) => (
-                <div
-                  key={i}
-                  className={`trick-play ${game.lastTrickWinner === play.userId ? 'trick-play-winner' : ''}`}
-                >
-                  <Card card={play.card} small />
-                  <span>{usernameOf(play.userId)}</span>
-                  {play.isAchico && <span className="achico-tag">me achico</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
+      <div className="player-cards">
         {game.seatOrder.map((userId, i, seats) => {
-          const angle = -Math.PI / 2 + (2 * Math.PI * i) / seats.length;
-          const left = 50 + 39 * Math.cos(angle);
-          const top = 50 + 38 * Math.sin(angle);
           const status = seatStatus(userId);
+          const balance = balanceOf(userId);
+          const spanFull = i === seats.length - 1 && seats.length % 2 !== 0;
           return (
             <div
               key={userId}
-              className={`seat round-seat ${game.turnUserId === userId ? 'seat-active' : ''} ${
-                game.eliminated.includes(userId) ? 'seat-eliminated' : ''
+              className={`player-card ${game.turnUserId === userId ? 'player-card-active' : ''} ${
+                game.eliminated.includes(userId) ? 'player-card-eliminated' : ''
               }`}
-              style={{ left: `${left}%`, top: `${top}%` }}
+              style={spanFull ? { gridColumn: 'span 2' } : undefined}
             >
-              <div className="seat-name">
-                {usernameOf(userId)} {userId === game.dealerId && <span title="Dealer">🎴</span>}
+              <div className="player-card-head">
+                <span className="player-card-name">
+                  <span className="player-avatar">{usernameOf(userId).charAt(0).toUpperCase()}</span>
+                  {usernameOf(userId)} {userId === game.dealerId && <span title="Dealer">🎴</span>}
+                </span>
+                {game.turnUserId === userId && <TurnTimer deadline={game.turnDeadline} />}
               </div>
-              <div className="seat-points">{game.points[userId] ?? 0} pts</div>
+              <div className="player-card-meta">
+                {game.points[userId] ?? 0} pts
+                {typeof balance === 'number' && ` · ${formatMoney(balance)} fichas`}
+              </div>
               {status && <div className={`seat-tag ${status.isTurn ? 'seat-turn-label' : ''}`}>{status.text}</div>}
-              {game.turnUserId === userId && <TurnTimer deadline={game.turnDeadline} />}
             </div>
           );
         })}
+      </div>
+
+      <div className="table-strip">
+        {game.trumpCard && (
+          <div className="table-strip-trump">
+            <span className="hint">Triunfo</span>
+            <Card card={game.trumpCard} small />
+            <span className="hint">{SUIT_LABEL[game.trumpCard.suit]}</span>
+          </div>
+        )}
+        <div className="table-strip-trick">
+          {game.lastTrickWinner && (
+            <p className="trick-winner-banner">
+              🏆 {usernameOf(game.lastTrickWinner)} ganó
+              {winningCard && (
+                <>
+                  {' '}
+                  con <Card card={winningCard} small />
+                </>
+              )}
+            </p>
+          )}
+          {game.trickPlays.length === 0 && game.phase === 'playing' && (
+            <p className="hint">Esperando la primera carta...</p>
+          )}
+          <div className="table-strip-plays">
+            {game.trickPlays.map((play, i) => (
+              <div
+                key={i}
+                className={`trick-play ${game.lastTrickWinner === play.userId ? 'trick-play-winner' : ''}`}
+              >
+                <Card card={play.card} small />
+                <span>{usernameOf(play.userId)}</span>
+                {play.isAchico && <span className="achico-tag">me achico</span>}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {game.phase === 'entry' && (

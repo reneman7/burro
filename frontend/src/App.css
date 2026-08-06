@@ -191,85 +191,100 @@
   font-weight: 600;
 }
 
-.round-table-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 640px;
-  aspect-ratio: 560 / 400;
-  margin: 0.5rem auto 2.5rem;
-}
-
-.round-table {
-  position: absolute;
-  inset: 12% 8%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, #1e7d43 0%, #16602f 100%);
-  border: 4px solid #0f4a24;
-}
-
-.table-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  color: #fff;
-  text-align: center;
-  width: 80%;
-}
-
-.center-trump {
-  display: flex;
-  align-items: center;
+.player-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  font-size: 0.95rem;
 }
 
-.center-trick {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  min-height: 56px;
-}
-
-.seat {
-  position: absolute;
-  transform: translate(-50%, -50%);
+.player-card {
   background: #fff;
   border: 1px solid rgba(128, 128, 128, 0.3);
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  min-width: 96px;
-  max-width: 132px;
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  text-align: center;
-  font-size: 0.85rem;
+  gap: 0.25rem;
 }
 
-.seat-active {
+.player-card-active {
   border-color: #2b8aef;
+  border-width: 2px;
   background: #ddeeff;
-  box-shadow: 0 0 0 2px rgba(43, 138, 239, 0.3);
 }
 
-.seat-eliminated {
+.player-card-eliminated {
   opacity: 0.5;
 }
 
-.seat-name {
+.player-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.player-card-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.player-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.player-card-meta {
+  font-size: 0.8rem;
+  color: inherit;
+  opacity: 0.75;
 }
 
 .seat-tag {
   font-size: 0.8rem;
   color: #e5484d;
+}
+
+.table-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #c9915f;
+  border: 1px solid #a8734a;
+  color: #fff;
+}
+
+.table-strip-trump {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.table-strip-trick {
+  flex: 1;
+  min-width: 0;
+}
+
+.table-strip-plays {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .turn-timer {
@@ -308,38 +323,17 @@
 }
 
 @media (max-width: 480px) {
-  .round-table-wrap {
-    aspect-ratio: 380 / 480;
+  .player-card {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
   }
 
-  .seat {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.3rem;
-    min-width: 58px;
-    max-width: 76px;
-    gap: 0.05rem;
+  .table-strip {
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
   }
 
-  .seat-name {
-    line-height: 1.1;
-  }
-
-  .seat-tag {
-    font-size: 0.58rem;
-    line-height: 1.1;
-  }
-
-  .table-center {
-    gap: 0.2rem;
-  }
-
-  .center-trump,
-  .center-trick {
-    gap: 0.4rem;
-  }
-
-  .center-trump .card,
-  .center-trick .card {
+  .table-strip .card {
     width: 30px;
     height: 42px;
     font-size: 0.6rem;
